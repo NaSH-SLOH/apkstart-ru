@@ -142,7 +142,7 @@
       <h2>Настройки</h2>
       <div class="set-search-wrap">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="setSearch" class="set-search" type="search" autocomplete="off" placeholder="Поиск по настройкам: альбомная / память / прокси / снимок…" />
+        <input id="setSearch" class="set-search" type="search" autocomplete="off" placeholder="Поиск: память / прокси / снимок…" />
         <button class="set-search-clear" id="btnClearSearch" type="button" hidden aria-label="Очистить поиск">×</button>
       </div>
       <button class="icon-btn" id="btnCloseSettings">
@@ -168,7 +168,7 @@
         </button>
         <button class="set-nav-item" type="button" data-cat="perf">
           <span class="set-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></svg></span>
-          <span class="set-nav-label">Производительность и ресурсы</span>
+          <span class="set-nav-label">Производительность</span>
           <span class="set-nav-badge" data-badge="perf" hidden></span>
         </button>
         <button class="set-nav-item" type="button" data-cat="net">
@@ -178,7 +178,7 @@
         </button>
         <button class="set-nav-item" type="button" data-cat="diag">
           <span class="set-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 3 8v5c0 5 3.8 7.6 9 9 5.2-1.4 9-4 9-9V8z"/><path d="m9 12 2 2 4-4"/></svg></span>
-          <span class="set-nav-label">Диагностика и исправление</span>
+          <span class="set-nav-label">Диагностика</span>
           <span class="set-nav-badge" data-badge="diag" hidden></span>
         </button>
         <button class="set-nav-item" type="button" data-cat="files">
@@ -188,7 +188,7 @@
         </button>
         <button class="set-nav-item" type="button" data-cat="about">
           <span class="set-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span>
-          <span class="set-nav-label">Обновление и О программе</span>
+          <span class="set-nav-label">Обновление</span>
           <span class="set-nav-badge" data-badge="about" hidden></span>
         </button>
       </nav>
@@ -235,7 +235,7 @@
         <div class="field">
           <label>Параметры, подобранные под этот ПК</label>
           <div class="inline-note" id="autoProfileText">Проверка…</div>
-          <span class="sub">Память, число ядер, бэкенд рендеринга, порт и способ ускорения выбираются автоматически; при неудачном запуске происходит автоматический откат и повтор — вручную ничего менять не нужно. ApkStart использует<b>Выделенный порт службы adb 5044</b> (ваш собственный adb в системе использует 5037), поэтому в командной строке
+          <span class="sub">Память, число ядер, бэкенд рендеринга, порт и способ ускорения выбираются автоматически; при неудачном запуске происходит автоматический откат и повтор — вручную ничего менять не нужно. ApkStart использует <b>выделенный порт службы adb 5044</b> (ваш собственный adb в системе использует 5037), поэтому в командной строке
             <code>adb devices</code> устройство Android не видно — это намеренная изоляция. Чтобы подключиться, используйте
             <code>$env:ANDROID_ADB_SERVER_PORT=5044</code> и выполните adb. Внимание: не подключайтесь вручную к порту 5555 <code>adb connect</code>, иначе поверх запущенного приложения появится системное окно «Разрешить отладку по USB?».</span>
         </div>

@@ -319,13 +319,27 @@ function planVariants(profile) {
     wipe: false,
     snapshot: false,
   });
+  // 「最后一档」必须比上一档更保守，否则白跑一轮启动。
+  // 实测：2048MB 内存的机器上，上一档已经是 2048MB/4 核/6144MB 数据，
+  // 这一档降到 2 核/2048MB 数据才算真正更保守（旧代码漏了 cores/dataMB 的比较）。
+  const prev = out[out.length - 1] || {};
+  const liteMem = Math.min(2048, Number(profile.memoryMB) || 2048);
+  const liteCores = Math.min(2, Number(profile.cores) || 2);
+  const liteData = Math.min(Number(profile.dataMB) || 2048, 2048);
+  const prevCores = prev.cores != null ? prev.cores : profile.cores;
+  const prevData = prev.dataMB != null ? prev.dataMB : profile.dataMB;
+  const sameAsPrev = prev.gpu === safeGpu && prev.accel === 'off'
+    && prev.memoryMB === liteMem && prevCores === liteCores
+    && prevData === liteData && prev.snapshot === false;
+  if (sameAsPrev) return out;
+
   out.push({
     ...profile,
     gpu: safeGpu,
     accel: 'off',
-    memoryMB: 2048,
-    cores: 2,
-    dataMB: Math.min(profile.dataMB, 2048),
+    memoryMB: liteMem,
+    cores: liteCores,
+    dataMB: liteData,
     label: 'Консервативный холодный запуск (минимум памяти + очистка снимков)',
     // 这里**绝对不能** wipe：以前写的是 wipe:true，而磁盘写满时每次尝试都会失败，
     // 于是连续重试把用户已装的应用和存档一起「清快照 + 清数据」了 ——
@@ -340,7 +354,7 @@ function planVariants(profile) {
   // 它是唯一「不加载快照」的方案，小内存机器上可能和前一档参数完全一样。
   const seen = new Set();
   return out.filter((v) => {
-    const k = `${v.gpu}|${v.accel}|${!!v.wipe}|${v.memoryMB}|${v.snapshot !== false ? 'snap' : 'nosnap'}|${v.lastResort ? 'last' : ''}`;
+    const k = `${v.gpu}|${v.accel}|${!!v.wipe}|${v.memoryMB}|${v.cores}|${v.dataMB}|${v.snapshot !== false ? 'snap' : 'nosnap'}`;
     if (seen.has(k)) return false;
     seen.add(k);
     return true;

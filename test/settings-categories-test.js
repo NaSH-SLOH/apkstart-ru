@@ -148,7 +148,7 @@ test('有导航、搜索与检测面板的样式', () => {
 });
 
 test('弹窗变宽了但没有撑破小屏', () => {
-  assert(/\.modal \{[^}]*width: 880px/.test(css), '弹窗应为 880px');
+  assert(/\.modal \{[^}]*width: 960px/.test(css), '弹窗应为 960px');
   assert(css.includes('max-width: calc(100vw - 48px)'), '小屏上应自适应');
 });
 
