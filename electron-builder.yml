@@ -52,13 +52,18 @@ win:
 # identityName / publisher 必须逐字等于 Partner Center →
 #   Product management → Product identity 里的
 #   Package/Identity/Name 与 Package/Identity/Publisher。
-# 下面这两个值是 2026-11-16 从 Partner Center 抄下来的确认值；
 # 换产品身份时改这里（或设 APKSTART_MSIX_IDENTITY / APKSTART_MSIX_PUBLISHER）。
-# 注意：占位 Publisher（CN=RoutineMiku）打出来的包商店会直接拒收。
+# 注意：占位 Publisher（CN=...) 打出来的包商店会直接拒收。
+#
+# В РУССКОМ ФОРКЕ: значения ниже — заглушки. Идентичность из Partner Center
+# принадлежит автору оригинала, с ней пакет не собрать и не опубликовать.
+# Если собираетесь публиковать в Microsoft Store — впишите свои значения
+# из Partner Center. Если нет — раздел можно не трогать: цель appx не входит
+# в список сборки по умолчанию (npm run build:exe её не использует).
 appx:
-  identityName: RoutineMiku.ApkStart
-  publisher: "CN=58CA1DED-8AB3-4D0D-AF50-62C9B781AA4D"
-  publisherDisplayName: RoutineMiku
+  identityName: YourPublisher.ApkStart
+  publisher: "CN=00000000-0000-0000-0000-000000000000"
+  publisherDisplayName: ApkStart RU
   displayName: ApkStart
   applicationId: ApkStart
   # 全信任桌面应用唯一必需的能力。不要加 unvirtualizedResources /
