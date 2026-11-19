@@ -400,13 +400,13 @@ function assert(cond, msg) { if (!cond) throw new Error(msg || '断言失败'); 
     assert(info.ok && info.api === '34' && info.tag === 'google_apis_playstore', `应判定 API 34 兼容镜像就绪：${JSON.stringify(info)}`);
   });
 
-  await test('Фирменные ресурсы полной версии и вход связи в Douyin на месте', async () => {
+  await test('Фирменные ресурсы полной версии и ссылка на репозиторий на месте', async () => {
     const root = path.join(__dirname, '..');
     assert(fs.existsSync(path.join(root, 'src', 'ui', 'assets', 'douyin-qr.jpg')), '缺少抖音二维码图片');
     assert(fs.existsSync(path.join(root, 'build', 'fetch-runtime.js')), '缺少完整版运行时组装脚本');
     const html = fs.readFileSync(path.join(root, 'src', 'ui', 'index.html'), 'utf8');
     assert(html.includes('douyin-qr.jpg'), '关于区未引用抖音二维码');
-    assert(html.includes('https://v.douyin.com/9TIIxVCANig/'), '缺少抖音主页链接');
+    assert(html.includes('https://github.com/RoutineMiku/apkstart'), '缺少原项目链接');
   });
 
   console.log(results.join('\n'));
