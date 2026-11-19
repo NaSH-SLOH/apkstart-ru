@@ -49,7 +49,6 @@
     "test:boot": "node test/boot-test.js",
     "pack:linux": "electron-builder --linux AppImage --config electron-builder.yml",
     "icons": "electron build/build-icons.js",
-    "shots": "electron build/store-shots.js",
     "pack:full": "node build/pack.js --full",
     "build:all": "node build/pack.js && node build/pack.js --full && node build/msix.js"
   },

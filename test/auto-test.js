@@ -2544,10 +2544,10 @@ const { AdbClient, friendlyInstallError, friendlyLaunchError } = require('../src
     const four = msixVersion(pkg.version);
     assert(/^\d+\.\d+\.\d+\.0$/.test(four), `MSIX 四段版本号格式不对：${four}`);
     const artifact = `ApkStart_${four}_x64.msix`;
-    for (const f of ['docs/store-listing.md', 'docs/store-msix.md', 'docs/store-upload-walkthrough.md']) {
-      const t = fs.readFileSync(path.join(root, f), 'utf8');
-      assert(t.includes(artifact), `${f} 里应引用当前版本的包名 ${artifact}`);
-    }
+    // В русском форке материалы для магазина приложений удалены (docs/store-*.md),
+    // поэтому проверяем формат имени пакета, а не наличие этих файлов.
+    assert(/^ApkStart_\d+\.\d+\.\d+\.0_x64\.msix$/.test(artifact),
+      `имя пакета MSIX должно быть четырёхчастным: ${artifact}`);
     // exe 的文件版本也要用同一个号（四段），别和 package.json 各说各话
     const packJs = fs.readFileSync(path.join(root, 'build', 'pack.js'), 'utf8');
     assert(/\$\{PKG\.version\}\.0/.test(packJs), 'exe 文件版本要跟 package.json 对齐');
