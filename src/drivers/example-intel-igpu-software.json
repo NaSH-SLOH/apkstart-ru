@@ -1,0 +1,24 @@
+{
+  "format": "apkstart-driver/1",
+  "id": "example-intel-igpu-software",
+  "name": "Intel iGPU · программный рендеринг как запасной вариант (пример)",
+  "version": "1.0.0",
+  "author": "ApkStart",
+  "description": "На старых встроенных видеокартах Intel (HD / до UHD 6xx) с некоторыми версиями драйверов случается сбой инициализации GLES или артефакты на экране. Если зафиксировать бэкенд рендеринга на software, картинка гарантированно появится.",
+  "enabled": false,
+  "priority": 0,
+  "match": {
+    "platform": ["win32"],
+    "gpuVendor": ["intel"]
+  },
+  "effect": {
+    "gpuMode": "software",
+    "configIni": {
+      "hw.gpu.mode": "software",
+      "hw.gpu.enabled": "yes"
+    },
+    "notes": [
+      "Картинка появится, но игры будут тормозить: таким машинам больше подходят лёгкие приложения"
+    ]
+  }
+}

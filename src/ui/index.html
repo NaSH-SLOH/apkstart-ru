@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+<title>ApkStart</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="theme.css" />
+</head>
+<body>
+
+<!-- 品牌标记：小尺寸下也要认得出来，所以用矢量而不是 1024 的位图缩到 22px -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2ee6a6"/>
+      <stop offset="55%" stop-color="#12b886"/>
+      <stop offset="100%" stop-color="#0a6f47"/>
+    </linearGradient>
+  </defs>
+  <symbol id="brandMark" viewBox="0 0 48 48">
+    <rect x="1.5" y="1.5" width="45" height="45" rx="13.5" fill="url(#brandGrad)"/>
+    <rect x="1.5" y="1.5" width="45" height="45" rx="13.5" fill="none" stroke="rgba(255,255,255,.34)" stroke-width="1.4"/>
+    <path d="M18.5 14.5 35 24 18.5 33.5z" fill="#fff"/>
+  </symbol>
+</svg>
+
+<header class="titlebar">
+  <div class="brand">
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 48 48" width="22" height="22"><use href="#brandMark"/></svg>
+    </div>
+    <span class="brand-name">ApkStart</span>
+    <span class="brand-tag" id="engineTag">Среда выполнения не подключена</span>
+  </div>
+  <div class="titlebar-spacer"></div>
+  <div class="titlebar-actions">
+    <button class="icon-btn" id="btnManual" title="Руководство (с решениями проблем)">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.4 9a2.8 2.8 0 1 1 4.4 2.3c-.9.6-1.8 1.1-1.8 2.4"/><circle cx="12" cy="17.2" r=".9" fill="currentColor" stroke="none"/></svg>
+    </button>
+    <button class="icon-btn" id="btnSettings" title="Настройки">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6h.09A1.7 1.7 0 0 0 10 3.05V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.09a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="toolbar">
+    <div class="search">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="text" placeholder="Поиск установленных приложений" autocomplete="off" />
+    </div>
+    <div class="toolbar-right">
+      <button class="btn primary" id="btnInstall">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v10"/><path d="m7 12 5 5 5-5"/><path d="M5 20h14"/></svg>
+        Установить APK
+      </button>
+    </div>
+  </section>
+
+  <section class="content" id="content">
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty">
+      <div class="empty-art">
+        <svg viewBox="0 0 160 120" width="220">
+          <rect x="18" y="16" width="124" height="50" rx="10" fill="#eef1f4" stroke="#dde2e8"/>
+          <rect x="34" y="34" width="30" height="14" rx="4" fill="#cfd8e3"/>
+          <rect x="72" y="34" width="52" height="6" rx="3" fill="#dde5ee"/>
+          <rect x="72" y="44" width="36" height="6" rx="3" fill="#e6ecf3"/>
+          <path d="M80 76v22m0 0-9-9m9 9 9-9" stroke="#9fb0c2" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <rect x="40" y="100" width="80" height="8" rx="4" fill="#eef1f4"/>
+        </svg>
+      </div>
+      <h2>Перетащите APK сюда, чтобы установить</h2>
+      <p>После установки автоматически создаётся значок на рабочем столе: двойной щелчок запускает приложение в отдельном окне, как обычную программу Windows.<br/>Если связь с .apk зарегистрирована, двойной щелчок по APK в проводнике тоже сразу установит его в ApkStart.</p>
+      <button class="btn primary lg" id="btnInstall2">Выбрать файл APK</button>
+      <p class="hint" id="emptyHint"></p>
+    </div>
+  </section>
+
+  <footer class="statusbar">
+    <div class="status-left">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Проверка среды выполнения…</span>
+      <button class="status-chip" id="envChip" hidden></button>
+    </div>
+    <div class="status-right">
+      <span class="status-item status-net" id="statusNet" hidden></span>
+      <span class="sep" id="statusNetSep" hidden></span>
+      <span class="status-item" id="statusDevice"></span>
+      <span class="sep"></span>
+      <span class="status-item" id="statusStats"></span>
+      <span class="sep"></span>
+      <a class="status-item powered-link" href="https://github.com/RoutineMiku/apkstart" target="_blank" rel="noopener">Powered by RoutineMiku</a>
+    </div>
+  </footer>
+</main>
+
+<!-- 启动欢迎卡：替代原来散落的各种启动小提示 -->
+<div class="modal-mask welcome-mask" id="welcomeMask" hidden>
+  <div class="welcome" role="dialog" aria-modal="true" aria-labelledby="welcomeHi">
+    <div class="welcome-hero">
+      <div class="welcome-halo"></div>
+      <div class="welcome-badge"><svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true"><use href="#brandMark"/></svg></div>
+      <div class="welcome-hi" id="welcomeHi">Привет</div>
+      <div class="welcome-sub" id="welcomeSub">ApkStart готов</div>
+    </div>
+    <div class="welcome-body">
+      <div class="welcome-stats" id="welcomeStats"></div>
+      <div class="welcome-tips" id="welcomeTips"></div>
+      <label class="welcome-opt">
+        <input type="checkbox" id="welcomeNever" />
+        <span>Больше не показывать при следующем запуске</span>
+      </label>
+    </div>
+    <div class="welcome-actions">
+      <button class="btn ghost" id="welcomeSettings">Открыть настройки</button>
+      <button class="btn primary" id="welcomeOk">Начать работу</button>
+    </div>
+  </div>
+</div>
+
+<!-- 安装进度 -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- 拖放遮罩 -->
+<div class="dropzone" id="dropzone">
+  <div class="dropzone-inner">
+    <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>
+    <strong>Отпустите, чтобы начать установку</strong>
+    <span>Поддерживается один или несколько файлов .apk</span>
+  </div>
+</div>
+
+<!-- 右键菜单 -->
+<div class="ctxmenu" id="ctxmenu"></div>
+
+<!-- 设置 -->
+<div class="modal-mask" id="settingsMask">
+  <div class="modal">
+    <header class="modal-head">
+      <h2>Настройки</h2>
+      <div class="set-search-wrap">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="setSearch" class="set-search" type="search" autocomplete="off" placeholder="Поиск по настройкам: альбомная / память / прокси / снимок…" />
+        <button class="set-search-clear" id="btnClearSearch" type="button" hidden aria-label="Очистить поиск">×</button>
+      </div>
+      <button class="icon-btn" id="btnCloseSettings">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </header>
+    <div class="modal-main">
+      <nav class="set-nav" id="setNav" aria-label="Категории настроек">
+        <button class="set-nav-item on" type="button" data-cat="basic">
+          <span class="set-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+          <span class="set-nav-label">Основное и установка</span>
+          <span class="set-nav-badge" data-badge="basic" hidden></span>
+        </button>
+        <button class="set-nav-item" type="button" data-cat="display">
+          <span class="set-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M9 20h6M12 17v3"/></svg></span>
+          <span class="set-nav-label">Отображение и окно</span>
+          <span class="set-nav-badge" data-badge="display" hidden></span>
+        </button>
+        <button class="set-nav-item" type="button" data-cat="input">
+          <span class="set-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M17 10v4"/></svg></span>
+          <span class="set-nav-label">Управление и ввод</span>
+          <span class="set-nav-badge" data-badge="input" hidden></span>
+        </button>
+        <button class="set-nav-item" type="button" data-cat="perf">
+          <span class="set-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></svg></span>
+          <span class="set-nav-label">Производительность и ресурсы</span>
+          <span class="set-nav-badge" data-badge="perf" hidden></span>
+        </button>
+        <button class="set-nav-item" type="button" data-cat="net">
+          <span class="set-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0"/><circle cx="12" cy="16" r="1.6"/></svg></span>
+          <span class="set-nav-label">Сеть и загрузка</span>
+          <span class="set-nav-badge" data-badge="net" hidden></span>
+        </button>
+        <button class="set-nav-item" type="button" data-cat="diag">
+          <span class="set-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 3 8v5c0 5 3.8 7.6 9 9 5.2-1.4 9-4 9-9V8z"/><path d="m9 12 2 2 4-4"/></svg></span>
+          <span class="set-nav-label">Диагностика и исправление</span>
+          <span class="set-nav-badge" data-badge="diag" hidden></span>
+        </button>
+        <button class="set-nav-item" type="button" data-cat="files">
+          <span class="set-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+          <span class="set-nav-label">Интеграция и файлы</span>
+          <span class="set-nav-badge" data-badge="files" hidden></span>
+        </button>
+        <button class="set-nav-item" type="button" data-cat="about">
+          <span class="set-nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span>
+          <span class="set-nav-label">Обновление и О программе</span>
+          <span class="set-nav-badge" data-badge="about" hidden></span>
+        </button>
+      </nav>
+    <div class="modal-body" id="settingsBody">
+      <div class="group" id="runtimeGroup" data-cat="basic">
+        <div class="group-title">Среда выполнения и окружение</div>
+        <div class="field">
+          <label>Состояние</label>
+          <div class="row" style="align-items:center;">
+            <span class="inline-note" id="setupStateText">Проверка…</span>
+            <span style="flex:1"></span>
+            <button class="btn primary sm" id="btnDeployAll">Всё в один клик</button>
+            <button class="btn ghost sm" id="btnSetupAdvanced">Дополнительно: подключить существующую среду выполнения</button>
+          </div>
+          <span class="sub" id="setupNote">Полный автомат: не нужно выбирать образ, включать ускорение и настраивать память</span>
+        </div>
+        <div class="field">
+          <div class="steps" id="setupSteps"></div>
+        </div>
+        <div id="envCheck" class="env-check" hidden></div>
+
+        <div class="setup-guide" id="setupGuide" hidden>
+          <h2>Установить Android на виртуальный диск</h2>
+          <p class="guide-sub">Окно виртуальной машины открыто. Выполните один раз 6 шагов ниже — после этого ApkStart будет запускаться прямо с диска, и образ больше не понадобится.</p>
+          <ol class="guide-list">
+            <li><b>Меню запуска</b>: используйте <kbd>↓</kbd> выберите <code>Installation - Install Android-x86 to harddisk</code>, Enter</li>
+            <li><b>Choose Partition</b>: выберите <code>Create/Modify partitions</code>; на вопрос об использовании GPT выберите <code>No</code></li>
+            <li><b>Разметка через cfdisk</b>: <code>New</code> → <code>Primary</code> → объём — сразу Enter → <code>Bootable</code> → <code>Write</code> → введите <code>yes</code> → <code>Quit</code></li>
+            <li><b>Форматировать</b>: выберите <code>vda1</code> → когда появится предложение отформатировать, выберите <code>ext4</code> → <code>Yes</code></li>
+            <li><b>Загрузка и система</b>: <code>Install GRUB</code> выберите <code>Yes</code>; <code>Install /system as read-write</code> выберите <code>Yes</code></li>
+            <li><b>Готово</b>: когда прогресс дойдёт до 100%, нажмите ниже «Я установил» (ApkStart перезапустится и перехватит управление)</li>
+          </ol>
+          <p class="guide-tip">Если позже появится сообщение, что adb не подключён: в окне виртуальной машины нажмите <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F1</kbd> откройте терминал и выполните
+            <code>setprop service.adb.tcp.port 5555</code>, <code>stop adbd</code>, <code>start adbd</code>, затем нажмите <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F7</kbd> и вернитесь в графический интерфейс.</p>
+          <div class="guide-foot">
+            <button class="btn primary" id="btnMarkInstalled">Я установил</button>
+            <button class="btn ghost" id="btnGuideClose">Позже</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="group" data-cat="basic">
+        <div class="group-title">Автоматический режим (по умолчанию, настройка не нужна)</div>
+        <div class="field">
+          <label>Параметры, подобранные под этот ПК</label>
+          <div class="inline-note" id="autoProfileText">Проверка…</div>
+          <span class="sub">Память, число ядер, бэкенд рендеринга, порт и способ ускорения выбираются автоматически; при неудачном запуске происходит автоматический откат и повтор — вручную ничего менять не нужно. ApkStart использует<b>Выделенный порт службы adb 5044</b> (ваш собственный adb в системе использует 5037), поэтому в командной строке
+            <code>adb devices</code> устройство Android не видно — это намеренная изоляция. Чтобы подключиться, используйте
+            <code>$env:ANDROID_ADB_SERVER_PORT=5044</code> и выполните adb. Внимание: не подключайтесь вручную к порту 5555 <code>adb connect</code>, иначе поверх запущенного приложения появится системное окно «Разрешить отладку по USB?».</span>
+        </div>
+        <div class="field">
+          <label>Общее место на диске (среда выполнения + данные Android + кэш)</label>
+          <div class="row">
+            <span class="inline-note" id="usageText">Подсчёт…</span>
+            <button class="btn ghost sm" id="btnCleanup">Очистить освобождаемые файлы</button>
+            <button class="btn ghost sm" id="btnLeftovers" title="Находит и удаляет папки программ от старых версий, недействительные записи удаления и временные файлы обновлений">Очистить остатки старых версий</button>
+            <button class="btn ghost sm" id="btnRepairNetwork" title="Когда в виртуальной машине Android нет сети (сетевые страницы в приложении остаются чёрными или крутят индикатор), этим сбрасываются данные Android, чтобы починить сеть. Список приложений сохраняется, при открытии приложение установится заново">Исправить сеть</button>
+            <button class="btn ghost sm danger" id="btnResetData" title="Стирает пользовательские данные /data, установленные приложения и снимок быстрого запуска — система возвращается в чистое состояние сразу после установки">Сбросить данные Android</button>
+          </div>
+          <label class="checkbox-inline">
+            <input type="checkbox" id="chkCleanSnapshots" />
+            <span>Очищать и снимок быстрого запуска текущего AVD (сначала остановит среду выполнения, зато реально освободит несколько ГБ)</span>
+          </label>
+          <span class="sub">Образ системы один на всю машину, данные приложений хранятся в разностном слое; старые образы, старые снимки, журналы и файлы блокировки можно освободить. Журнал при превышении лимита прокручивается и не растёт бесконечно. «Сброс данных Android» действительно удаляет несколько ГБ пользовательских данных, оставляя только саму систему.</span>
+        </div>
+        <div class="runtime-actions">
+          <button class="btn ghost sm" id="btnDiagnostics">Экспорт отчёта диагностики</button>
+          <button class="btn ghost sm" id="btnRebuildShortcuts">Пересоздать ярлыки</button>
+          <span class="inline-note">Отчёт диагностики нужен для разбора проблем; пересоздание восстановит значки на рабочем столе и в меню «Пуск»</span>
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Автозапуск при старте системы (по умолчанию включён)</label>
+            <span class="sub">Работает в трее при входе в Windows: двойной щелчок по значку на рабочем столе открывает приложение за секунды, запускать вручную не нужно.</span>
+          </div>
+          <input type="checkbox" id="setAutoStart" class="switch" />
+        </div>
+      </div>
+
+      <div class="group" data-cat="display">
+        <div class="group-title">Окно приложения</div>
+        <div class="field">
+          <label>Режим отображения</label>
+          <select id="setDisplayMode">
+            <option value="window">Портретное окно (свободно растягивается, размер запоминается для каждого приложения)</option>
+            <option value="fullscreen">Полный экран (заполняет экран, сохраняя пропорции телефона с чёрными полями по бокам)</option>
+          </select>
+          <span class="sub">нажмите в любой момент <b>F11</b> или переключите правой кнопкой в трее; полный экран только увеличивает окно, пропорции кадра не меняются, приложение не перезапускается.</span>
+        </div>
+        <div class="field">
+          <label>Автоматический полный экран</label>
+          <select id="setAutoFullscreen">
+            <option value="off">Выключено (используется выбранный выше режим)</option>
+            <option value="on">Включено · каждое приложение при запуске открывается на весь экран</option>
+          </select>
+          <span class="sub">Если включено, каждое приложение сразу открывается на весь экран, F11 больше не нужен. Лучше всего работает вместе с «Альбомной» ниже — пропорции альбомной панели и так совпадают с экраном, и полный экран не оставляет чёрных полей.</span>
+        </div>
+        <div class="field">
+          <label>Ориентация экрана</label>
+          <select id="setOrientationMode">
+            <option value="auto">Следовать приложению (рекомендуется · ориентация выбирается автоматически, кадр заполняет экран без чёрных полей)</option>
+            <option value="portrait">Принудительно портретная (пропорции телефона, для коротких видео и чтения)</option>
+            <option value="landscape">Принудительно альбомная (широкий экран, для фильмов и игр)</option>
+          </select>
+          <span class="sub">Ориентация Android<b>Реальная ориентация панели виртуального телефона</b>определяется. Если ориентация панели не совпадает с заявленной приложением, Android отдаёт приложению узкую полосу посередине, а по бокам добавляет чёрное — ни размер окна, ни разрешение этого не заполнят. «Следовать приложению» считывает ориентацию из APK при установке и при запуске переключает панель на нужную, поэтому Hongguo, Modu и подобные приложения открываются ровно и во весь экран. Среда выполнения перезапускается только при смене ориентации (около десятка секунд), дальше приложения той же ориентации открываются за секунды.</span>
+        </div>
+        <div class="field">
+          <label>Автоповорот образа</label>
+          <select id="setAutoRotate">
+            <option value="on">Включено (по умолчанию) · в системных настройках автоповорот показывается включённым</option>
+            <option value="off">Выключено · вернуться к прежнему поведению блокировки</option>
+          </select>
+          <span class="sub">в Android<b>Переключатель автоповорота включён по умолчанию</b>. Обратите внимание: на ориентацию изображения это не влияет — ориентация панели и экрана по-прежнему задаётся политикой выше и игнорированием запросов приложения, датчик их не сдвинет. Значение нужно только тем приложениям, которые его читают.</span>
+        </div>
+        <div class="field">
+          <label>Планшетная вёрстка</label>
+          <select id="setTabletMode">
+            <option value="on">Включено (рекомендуется · логическая плотность 190 dpi, sw606dp даёт планшетную вёрстку)</option>
+            <option value="off">Выключено (плотность образа по умолчанию, телефонная вёрстка)</option>
+          </select>
+          <span class="sub">Ширина 720 при 190 dpi равна 606dp — это ровно за порогом планшетной вёрстки Android в 600dp: двухколоночная страница серий и разделённые настройки в Hongguo появляются только при такой вёрстке. Если отключить, вернётся телефонная вёрстка (крупнее шрифт, меньше информации). Изменение применяется при следующем открытии приложения.</span>
+        </div>
+        <div class="field">
+          <label>Текущая ориентация панели</label>
+          <select id="setLandscape">
+            <option value="portrait">Портретная панель</option>
+            <option value="landscape">Альбомная панель</option>
+          </select>
+          <span class="sub">Это среда выполнения<b>Сейчас</b>используемая физическая ориентация панели, её автоматически задаёт политика выше. Полностью в ваших руках она только в режиме «Принудительно».</span>
+        </div>
+        <div class="field">
+          <label>Способ размещения окна</label>
+          <select id="setWindowEmbed">
+            <option value="detached">Собственное окно (по умолчанию, рекомендуется) · эмулятор открывает своё окно, самая стабильная частота кадров и масштабирование</option>
+            <option value="embed">Встроенный режим · кадр Android встроен в окно ApkStart, в заголовке есть кнопка поворота</option>
+          </select>
+          <span class="sub">В собственном окне эмулятор сам рендерит и размещает кадр: перетаскивание, масштабирование и поворот отзываются сразу, без чёрных полей и смещения нажатий — ценой лишнего значка на панели задач (в альбомной ориентации используйте меню в трее или Ctrl+Alt+R). Встроенный режим помещает окно эмулятора внутрь нашего окна: выглядит целостнее и есть своя кнопка поворота, но при масштабировании, повороте и переключении приложений возможны просадки кадров и чёрные поля. Изменение применяется при следующем открытии приложения.</span>
+        </div>
+        <div class="field" id="portraitField">
+          <label>Размер портретного изображения</label>
+          <select id="setPortrait">
+            <option value="720x1280">Мелкий · 720 × 1280</option>
+            <option value="900x1600">Средний · 900 × 1600</option>
+            <option value="1080x1920">Крупный · 1080 × 1920</option>
+            <option value="1440x2560">Очень крупный · 1440 × 2560</option>
+          </select>
+          <span class="sub">В оконном режиме окно масштабируется перетаскиванием рамки; здесь задаётся внутренний размер рендеринга Android — чем меньше, тем экономнее.</span>
+        </div>
+      </div>
+
+      <div class="group" data-cat="input">
+        <div class="group-title">Кнопки мыши</div>
+        <div class="field">
+          <label>Левая кнопка · подтвердить / нажать</label>
+          <span class="sub">Эмулятор изначально считает левую кнопку касанием пальцем, а перетаскивание с зажатой кнопкой — свайпом; дополнительная настройка не нужна.</span>
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Правая кнопка · «Назад» в Android</label>
+            <span class="sub">По умолчанию эмулятор считает и правую кнопку нажатием (легко промахнуться). Если включить, правая кнопка только выполняет «Назад» и больше не нажимает.</span>
+          </div>
+          <input type="checkbox" id="setMouseRightBack" class="switch" />
+        </div>
+        <div class="field">
+          <label>Колесо · свайп</label>
+          <select id="setMouseWheelMode">
+            <option value="smooth">Плавно (рекомендуется) · несколько прокруток объединяются в один плавный свайп</option>
+            <option value="native">Нативно · эмулятор обрабатывает каждое событие</option>
+            <option value="off">Выключено · колесо не перехватывается</option>
+          </select>
+          <span class="sub">Плавный режим объединяет прокрутку за короткий промежуток в один жест свайпа: без рывков по клеткам и без запуска отдельного процесса adb на каждую клетку.</span>
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Боковые кнопки мыши · назад / вперёд (по умолчанию выключено)</label>
+            <span class="sub">Для боковых кнопок нужен глобальный хук мыши. Хук ставится, только когда окно приложения ApkStart активно, и снимается при потере фокуса или закрытии, рабочий стол не тормозит.</span>
+          </div>
+          <input type="checkbox" id="setMouseSideButtons" class="switch" />
+        </div>
+        <div class="field">
+          <span class="sub">Эта раскладка действует, только когда окно приложения активно; после переключения на рабочий стол или закрытия окна поведение мыши полностью возвращается к стандартному в Windows.</span>
+        </div>
+      </div>
+
+      <div class="group" data-cat="input">
+        <div class="group-title">Раскладка клавиатуры (геймпад)</div>
+        <div class="field switch-field">
+          <div>
+            <label>Включить раскладку клавиатуры</label>
+            <span class="sub">Превращает клавиши клавиатуры в нажатия и свайпы по экрану Android. Подходит для мобильных игр с клавиатуры (WASD — движение, J/K — умения и т.п.). Настраивается отдельно для каждого приложения: правая кнопка на карточке приложения → «Раскладка клавиатуры», выберите шаблон или настройте своё.</span>
+          </div>
+          <input type="checkbox" id="setKeymapEnabled" class="switch" />
+        </div>
+        <div class="field">
+          <span class="sub" id="keymapHint">Для текущего приложения раскладка не настроена. Щёлкните карточку приложения правой кнопкой, чтобы применить готовый шаблон.</span>
+        </div>
+      </div>
+
+      <div class="group" id="perfGroup" data-cat="perf">
+        <div class="group-title">Производительность и ресурсы</div>
+        <div class="field">
+          <label>Политика ресурсов</label>
+          <select id="setResourceMode">
+            <option value="save">Экономно · 2 ядра / уступает активному окну / 540p (старые машины, работа в фоне)</option>
+            <option value="balanced">Сбалансированный · половина физических ядер / уступает активному окну / 720p (рекомендуется)</option>
+            <option value="smooth">Плавно · без ограничения ядер / приоритет как у активного окна (видео, игры)</option>
+          </select>
+          <span class="sub">Определяет, сколько CPU забирает виртуальная машина и насколько детальной будет картинка. Если Hongguo/Douyin подтормаживают, переключите на «Плавно»; если нужно просто держать лёгкие приложения — на «Экономно». Изменение применится при следующем открытии приложения.</span>
+        </div>
+        <div class="field two">
+          <div>
+            <label>Качество графики (внутреннее разрешение рендеринга Android)</label>
+            <select id="setRenderSize">
+              <option value="auto">Авто (по состоянию ускорения)</option>
+              <option value="540x960">Плавно · 540 × 960</option>
+              <option value="720x1280">Сбалансированный · 720 × 1280</option>
+              <option value="1080x1920">HD · 1080 × 1920</option>
+            </select>
+          </div>
+          <div>
+            <label>Раздел данных Android (сюда ставятся приложения и игры)</label>
+            <select id="setDataGB">
+              <option value="0">Авто</option>
+              <option value="4">4 GB</option>
+              <option value="6">6 GB</option>
+              <option value="8">8 GB</option>
+              <option value="12">12 GB</option>
+              <option value="16">16 GB</option>
+              <option value="24">24 GB</option>
+              <option value="32">32 GB</option>
+              <option value="48">48 GB</option>
+              <option value="64">64 ГБ (игры уровня 50 ГБ)</option>
+              <option value="96">96 GB</option>
+              <option value="128">128 GB</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <div class="row">
+            <button class="btn ghost sm" id="btnGrowData">Увеличить объём</button>
+            <span class="sub" style="flex:1;margin:0">Объём увеличивается на месте: установленные приложения и сохранения остаются, только следующее открытие приложения займёт на десяток секунд больше.</span>
+          </div>
+        </div>
+        <div class="field">
+          <span class="sub" id="dataNote">Чтение раздела данных…</span>
+        </div>
+        <div class="field">
+          <label>Язык системы</label>
+          <select id="setLocale">
+            <option value="zh-CN">简体中文 (рекомендуется)</option>
+            <option value="zh-TW">繁體中文</option>
+            <option value="en-US">English (родной для образа)</option>
+            <option value="ja-JP">日本語</option>
+            <option value="ko-KR">한국어</option>
+          </select>
+          <span class="sub">Язык системных настроек, диалогов разрешений и формата даты. Подставляется в виртуальную машину при загрузке,
+            <b>Применится после перезапуска среды выполнения</b>. Китайская раскладка на этот параметр не влияет — она включается отдельно ниже.</span>
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Китайская раскладка (рекомендуется)</label>
+            <span class="sub">В образе есть только английская клавиатура; если включить, тихо установится и включится идущая в комплекте раскладка Google Pinyin — так в приложениях Android можно сразу печатать по-китайски. Если отключить, останется системная раскладка.</span>
+          </div>
+          <input type="checkbox" id="setChineseIme" class="switch" />
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Ускорение сети (рекомендуется)</label>
+            <span class="sub">Задаёт для Android китайские публичные DNS (Alibaba / Tencent). По умолчанию Android использует DNS хоста: если на хосте включён VPN или корпоративная сеть, разрешение имён растягивается на сотни миллисекунд и видео-приложения медленнее показывают первый экран. Если внутренние домены перестают открываться, это можно отключить.</span>
+          </div>
+          <input type="checkbox" id="setFastDns" class="switch" />
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Звук Android</label>
+            <span class="sub">Обеспечивает нормальное воспроизведение звуков уведомлений и видео. Отключайте только если звук совсем не нужен и хочется сэкономить немного CPU.</span>
+          </div>
+          <input type="checkbox" id="setAudio" class="switch" />
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Сохранять снимок быстрого запуска (рекомендуется)</label>
+            <span class="sub">Второе открытие приложения занимает считанные секунды, ценой становятся лишние 2–3 ГБ на диске — <code>ram.bin</code>. При нехватке места можно отключить: влияет только на скорость запуска, на приложения и сохранения — нет.</span>
+          </div>
+          <input type="checkbox" id="setKeepSnapshot" class="switch" />
+        </div>
+        <details class="mini-details">
+          <summary>Детали контейнера (дополнительно)</summary>
+          <div class="field switch-field">
+            <div>
+              <label>Лёгкий контейнер</label>
+              <span class="sub">Ограничивает квоту vCPU и снижает приоритет процесса, отдавая CPU рабочему столу Windows. Пункт «Политика ресурсов» выше задаёт это автоматически.</span>
+            </div>
+            <input type="checkbox" id="setLiteMode" class="switch" />
+          </div>
+          <div class="field">
+            <label>Приоритет виртуальной машины</label>
+            <select id="setPriorityMode">
+              <option value="balanced">Сбалансированный (рекомендуется) · среда выполнения уступает активному окну</option>
+              <option value="performance">Приоритет производительности · среда выполнения наравне с активным окном</option>
+              <option value="game">Игры / низкая задержка · высокий приоритет среды выполнения, для шутеров и ритм-игр</option>
+            </select>
+            <span class="sub">Игровой режим держит высокий приоритет CPU для виртуальной машины Android и сокращает опрос на стороне хоста — задержка ввода и изображения минимальна; ценой становится замедление остальных программ. Когда окон приложений нет, контейнер всё равно паркуется со сниженным приоритетом.</span>
+          </div>
+        </details>
+        <div class="field switch-field">
+          <div>
+            <label>Глубокая обрезка фона системы</label>
+            <span class="sub">Дополнительно отключает фоновые пакеты Play Маркета, мастер настройки, службу печати и т.п., оставляя только необходимое для запуска приложений. Если приложение сообщит об отсутствии сервисов Google Play, отключите этот переключатель — всё восстановится.</span>
+          </div>
+          <input type="checkbox" id="setDeepTrim" class="switch" />
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Прогрев при запуске (рекомендуется)</label>
+            <span class="sub">Сразу после запуска ApkStart в фоне поднимает окружение Android (окно всё время скрыто, эмулятор не виден). Дальше для любого приложения остаётся одно «открыть»: на практике вместо 20 с лишним секунд — почти без ожидания. Цена — около 1 ГБ памяти в простое; если отключить, первое открытие приложения потребует холодного запуска.</span>
+          </div>
+          <input type="checkbox" id="setPrewarm" class="switch" />
+        </div>
+        <div class="field">
+          <span class="sub">Окружение Android загружается один раз и остаётся в памяти; дальше при открытии приложения система заново не поднимается — запускается только это приложение, а процессы остальных останавливаются. После закрытия последнего окна фон очищается и контейнер паркуется, а следующее открытие всё равно происходит за секунды.</span>
+        </div>
+      </div>
+
+      <div class="group" id="downloadGroup" data-cat="net">
+        <div class="group-title">Источники загрузки и обновлений</div>
+        <div class="field">
+          <label>Обновления и источники загрузки</label>
+          <select id="setSourcePref">
+            <option value="auto">Автоматически выбирать быстрый источник (рекомендуется)</option>
+            <option value="gitee">Только Gitee (обычно быстрее всего в Китае)</option>
+            <option value="github">Только GitHub</option>
+          </select>
+          <span class="sub">«Авто» одновременно запросит последние версии на GitHub и Gitee, скачает по 256 КБ с каждого адреса для замера скорости и продолжит с самого быстрого; недоступность одного источника не мешает обновлению.</span>
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Автоматически пробовать публичные зеркала ускорения</label>
+            <span class="sub">Если прямое подключение к GitHub слишком медленное, дополнительно замеряется скорость двух публичных прокси-сервисов ghfast.top / gh-proxy.com (передают только публичные файлы релизов, аккаунт не затрагивается). Если отключить, используются только прямое подключение и ваш собственный префикс.</span>
+          </div>
+          <input type="checkbox" id="setAutoMirror" class="switch" />
+        </div>
+        <div class="field">
+          <label>Префикс зеркала загрузки (необязательно, ускоряет GitHub)</label>
+          <input id="setMirrorPrefix" type="text" placeholder="например https://ghfast.top/" />
+          <span class="sub">Если заполнить, используется только ваш префикс, а два публичных зеркала выше не пробуются; если оставить пустым, решает логика «Авто». Загрузчик подставляет префикс перед настоящим адресом.</span>
+        </div>
+        <div class="field">
+          <label>Число потоков загрузки (1–16, по умолчанию 8)</label>
+          <input id="setConnections" type="number" min="1" max="16" step="1" />
+          <span class="sub">Большие файлы качаются блоками параллельно. 8 потоков по умолчанию уже насыщают большинство домашних подключений; при стабильной сети можно попробовать 16.</span>
+        </div>
+        <details class="mini-details">
+          <summary>Источник обновлений Gitee (необязательно)</summary>
+          <div class="field">
+            <label>Токен Gitee только для чтения (обычно не нужен)</label>
+            <input id="setGiteeToken" type="password" placeholder="Можно оставить пустым: открытый репозиторий читается анонимно" />
+            <span class="sub">Репозиторий проекта открыт, список релизов Gitee читается анонимно, так что источник Gitee работает и с пустым полем. Заполнять нужно только при ограничении запросов Gitee (ответ 403/429) или если нужен доступ к приватной ветке: gitee.com → Настройки → Личный токен, достаточно галочки «projects»; он используется только для чтения списка релизов и ничего не загружает.</span>
+          </div>
+        </details>
+      </div>
+
+      <div class="group" id="preflightGroup" data-cat="diag">
+        <div class="group-title">Проверка ПК · автоконфигурация</div>
+        <div class="field">
+          <span class="sub">Сначала проверяет компьютер: включена ли виртуализация CPU, есть ли в Windows платформа гипервизора, какая видеокарта и сколько у неё памяти, хватает ли ОЗУ и версии системы. Что можно поправить автоматически (память / ядра / качество графики / бэкенд рендеринга), сразу записывается в настройки и закрепляется как драйвер; для того, что требует прав администратора, выдаётся кнопка; а то, что меняется только в BIOS, описывается словами.</span>
+        </div>
+        <div class="field">
+          <div class="row">
+            <button class="btn primary sm" id="btnPreflight">Начать проверку</button>
+            <button class="btn ghost sm" id="btnPreflightApply" hidden>Рекомендуемая конфигурация</button>
+          </div>
+        </div>
+        <div id="preflightList" class="drv-list"></div>
+        <div class="field">
+          <span class="sub" id="preflightSummary"></span>
+        </div>
+      </div>
+
+      <div class="group" id="driverGroup" data-cat="diag">
+        <div class="group-title">Драйверы · патчи совместимости</div>
+        <div class="field">
+          <span class="sub">Некоторым машинам нужны другие параметры запуска, чтобы вообще заработать (старая видеокарта с низкой версией GLES, выключенное аппаратное ускорение, драйвер, который падает при включении аппаратного рендеринга). Драйвер — это JSON: какие машины совпадают + какие параметры запуска менять при совпадении. Можно писать свои, импортировать и делиться. Драйвер меняет только пункты из белого списка,<b>Не выполняет никакого кода</b>; если совпадений нет, правило не применяется.</span>
+        </div>
+        <div class="field">
+          <span class="sub" id="drvSummary">Чтение драйверов…</span>
+        </div>
+        <div id="drvList" class="drv-list"></div>
+        <div class="field">
+          <div class="row">
+            <button class="btn ghost sm" id="btnDrvReload">Обновить</button>
+            <button class="btn ghost sm" id="btnDrvImport">Импортировать драйвер…</button>
+            <button class="btn ghost sm" id="btnDrvFolder">Открыть папку драйверов</button>
+            <button class="btn ghost sm" id="btnDrvExport">Экспорт шаблона для этого ПК</button>
+          </div>
+          <span class="sub">«Экспорт шаблона для этого ПК» подставит условия совпадения под эту машину, измените <code>effect</code> из
+            <code>gpuMode</code> / <code>forceTcg</code> и всё заработает. Описание полей — в файле репозитория <code>docs/drivers.md</code>.</span>
+        </div>
+      </div>
+
+      <div class="group" id="autodebugGroup" data-cat="diag">
+        <div class="group-title">Автодиагностика · умная проверка</div>
+        <div class="field">
+          <span class="sub">Регулярно проверяет компьютер в фоне: запустилась ли среда выполнения Android, в порядке ли авторизация adb, сколько осталось места на диске, не мешает ли разделу данных разностный диск, целы ли снимки, не конфликтуют ли настройки. Уведомляет только при обнаружении<b>Новое</b>серьёзной проблемы один раз показывается уведомление, остальное тихо перечисляется ниже.</span>
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Включить автодиагностику (по умолчанию включена)</label>
+            <span class="sub">Если отключить, регулярная проверка прекратится; запустить вручную можно кнопкой «Проверить сейчас».</span>
+          </div>
+          <input type="checkbox" id="setAutodebugAuto" class="switch" />
+        </div>
+        <div class="field two">
+          <div>
+            <label>Интервал проверки</label>
+            <select id="setAutodebugInterval">
+              <option value="1">Каждую 1 минуту</option>
+              <option value="5">Каждые 5 минут</option>
+              <option value="10">Каждые 10 минут (рекомендуется)</option>
+              <option value="30">Каждые 30 минут</option>
+              <option value="60">Каждый 1 час</option>
+            </select>
+          </div>
+          <div class="switch-field" style="align-items:center">
+            <div>
+              <label>Уведомлять о новых проблемах</label>
+              <span class="sub">Уведомления только о серьёзных проблемах; известные старые проблемы повторно не беспокоят.</span>
+            </div>
+            <input type="checkbox" id="setAutodebugNotify" class="switch" />
+          </div>
+        </div>
+        <div class="runtime-actions">
+          <button class="btn primary sm" id="btnAutodebugRun">Проверить сейчас</button>
+          <button class="btn ghost sm" id="btnAutodebugReport">Экспорт отчёта диагностики</button>
+          <span class="inline-note" id="autodebugStateText">Ещё не проверялось</span>
+        </div>
+        <div id="autodebugList" class="dbg-list"></div>
+      </div>
+
+      <details class="advanced-group" data-cat="perf">
+        <summary>Дополнительные параметры (обычно менять не нужно)</summary>
+      <div class="group" data-cat="perf">
+        <div class="group-title">Среда выполнения</div>
+        <div class="field">
+          <label>Среда выполнения</label>
+          <div class="row">
+            <input id="setEngineLabel" type="text" readonly value="Собственная среда выполнения ApkStart (QEMU + Android 14, автономно)" />
+          </div>
+          <span class="sub">ApkStart использует только собственную среду выполнения: adb, emulator и образ системы он скачивает и ведёт сам, не ищет, не перехватывает и не зависит от эмуляторов, установленных на компьютере (MuMu / LDPlayer / BlueStacks / WSA не используются). Поэтому смена машины, наличие чужих эмуляторов и их обновления здесь ни на что не влияют.</span>
+        </div>
+        <div class="field">
+          <label>Путь к adb</label>
+          <input id="setAdbPath" type="text" placeholder="Если пусто, выполняется поиск в PATH / Android SDK" />
+        </div>
+        <div class="field">
+          <label>Адрес устройства</label>
+          <span class="sub" id="deviceAddrNote">Назначается самим ApkStart (emulator-5554, при конфликте порт автоматически сдвигается), заполнять не нужно.</span>
+        </div>
+        <div class="field">
+          <label>Образ системы (ISO)</label>
+          <input id="setSystemImage" type="text" placeholder="Путь к ISO или IMG Android-x86 / Bliss OS; оставьте пустым для расположения по умолчанию" />
+        </div>
+        <div class="field two">
+          <div>
+            <label>Память (МБ, 0 = авто)</label>
+            <input id="setMemory" type="number" min="0" step="512" />
+          </div>
+          <div>
+            <label>Ядра CPU (0 = авто)</label>
+            <input id="setCores" type="number" min="0" max="16" />
+          </div>
+        </div>
+        <div class="field">
+          <span class="sub" id="builtinResNote"></span>
+        </div>
+        <div class="field">
+          <label>Освобождение в простое (мин, 0 = не освобождать)</label>
+          <input id="setIdle" type="number" min="0" step="1" />
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Универсальный образ совместимости (управляется автоматически)</label>
+            <span class="sub">Сейчас есть только один универсальный образ Android 14: на нём работают и x86-, и ARM-приложения, при первом запуске ARM-приложения образ скачивается автоматически, переключать вручную не нужно. Этот переключатель оставлен только для совместимости со старыми настройками.</span>
+          </div>
+          <input type="checkbox" id="setCompat" class="switch" />
+        </div>
+        <div class="field" id="compatInstallField" hidden>
+          <label>Образ совместимости</label>
+          <div class="row">
+            <span class="inline-note" id="compatImgStatus">Не скачано</span>
+            <button class="btn ghost sm" id="btnInstallPlay">Скачать образ совместимости</button>
+          </div>
+        </div>
+        <div class="runtime-actions">
+          <button class="btn ghost sm" id="btnRuntimeStart">Запустить среду выполнения</button>
+          <button class="btn ghost sm" id="btnRuntimeStop">Остановить встроенную виртуальную машину</button>
+          <span class="inline-note" id="probeResult"></span>
+        </div>
+      </div>
+      </details>
+
+      <div class="group" data-cat="display">
+        <div class="group-title">Настройки системы Android (без входа в рабочий стол Android)</div>
+        <div class="field">
+          <label>Состояние</label>
+          <div class="row">
+            <span class="inline-note" id="androidStatus">Среда выполнения не запущена</span>
+            <button class="btn ghost sm" id="btnAndroidRefresh">Обновить</button>
+            <button class="btn ghost sm" id="btnAndroidTune">Оптимизация плавности в один клик</button>
+          </div>
+          <span class="sub">Отключает системные анимации, снимает ограничение фоновых процессов и добавляет приложение в белый список батареи — на слабых компьютерах эффект заметнее всего.</span>
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Wi-Fi</label>
+            <span class="sub">Беспроводная сеть внутри виртуальной машины Android; если отключить, немного экономится CPU.</span>
+          </div>
+          <input type="checkbox" id="setAndroidWifi" class="switch" />
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Режим полёта</label>
+            <span class="sub">Полностью отключает сеть (включая мобильные данные); включайте, когда нужна тишина.</span>
+          </div>
+          <input type="checkbox" id="setAndroidAirplane" class="switch" />
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Системные анимации</label>
+            <span class="sub">Если отключить, переключение разделов заметно ускорится; на функции это не влияет.</span>
+          </div>
+          <input type="checkbox" id="setAndroidAnim" class="switch" />
+        </div>
+        <div class="field">
+          <label>Громкость мультимедиа</label>
+          <div class="row">
+            <input type="range" id="setAndroidVolume" min="0" max="100" step="1" style="flex:1" />
+            <span class="inline-note" id="androidVolumeText">—</span>
+          </div>
+        </div>
+        <div class="field two">
+          <div>
+            <label>Размер шрифта</label>
+            <select id="setAndroidFont">
+              <option value="0.85">Мелкий</option>
+              <option value="1.00">Стандартный</option>
+              <option value="1.15">Крупный</option>
+              <option value="1.30">Очень крупный</option>
+            </select>
+          </div>
+          <div>
+            <label>Размер отображения</label>
+            <select id="setAndroidDensity">
+              <option value="240">Компактно (экономнее)</option>
+              <option value="320">Стандартный</option>
+              <option value="420">Мягкий</option>
+              <option value="480">Очень крупный</option>
+            </select>
+          </div>
+        </div>
+        <div class="runtime-actions">
+          <button class="btn ghost sm" id="btnAndroidSettings">Настройки Android</button>
+          <button class="btn ghost sm" id="btnAndroidDisplay">Настройки отображения</button>
+          <button class="btn ghost sm" id="btnAndroidSound">Настройки звука</button>
+          <button class="btn ghost sm" id="btnAndroidLocale">Языковые настройки</button>
+          <button class="btn ghost sm" id="btnAndroidApps">Управление приложениями</button>
+        </div>
+      </div>
+
+      <div class="group" data-cat="files">
+        <div class="group-title">Рабочий стол и приложения</div>
+        <div class="field switch-field">
+          <div>
+            <label>Создавать ярлык на рабочем столе после установки</label>
+            <span class="sub">Ярлык с настоящим значком приложения, двойной щелчок сразу открывает приложение</span>
+          </div>
+          <input type="checkbox" id="setAutoShortcut" class="switch" />
+        </div>
+        <div class="field switch-field">
+          <div>
+            <label>Также добавлять в меню «Пуск»</label>
+            <span class="sub">Имя приложения находится поиском Windows, а панель задач группирует по приложению</span>
+          </div>
+          <input type="checkbox" id="setStartMenuShortcut" class="switch" />
+        </div>
+        <div class="field">
+          <label>Папка ярлыков</label>
+          <input id="setShortcutDir" type="text" placeholder="Пусто = рабочий стол" />
+        </div>
+        <div class="runtime-actions">
+          <button class="btn ghost sm" id="btnRebuildShortcuts">Пересоздать ярлыки</button>
+          <span class="inline-note">Если значки на рабочем столе случайно удалены или заблокированы антивирусом, нажмите здесь, чтобы восстановить все по текущим настройкам.</span>
+        </div>
+      </div>
+
+      <div class="group" data-cat="files">
+        <div class="group-title">Обмен файлами</div>
+        <div class="field">
+          <label>Общая папка на этом ПК</label>
+          <div class="row">
+            <input id="setSharedDir" type="text" />
+            <button class="btn ghost sm" id="btnBrowseShared">Обзор</button>
+            <button class="btn ghost sm" id="btnOpenShared">Открыть</button>
+            <button class="btn ghost sm" id="btnSyncShared">Синхронизировать сейчас</button>
+            <button class="btn primary sm" id="btnSaveShared">Сохранить и перенести</button>
+          </div>
+          <span class="sub">После изменения существующие файлы из старой папки автоматически перенесутся в новую; работающий обмен файлами не прерывается.</span>
+        </div>
+        <div class="field">
+          <label>соответствующая папка в Android</label>
+          <input id="setDeviceSharedDir" type="text" placeholder="/sdcard/ApkStartShared" />
+        </div>
+        <p class="note">Обе папки постоянно синхронизируются в двух направлениях: файлы, сохранённые приложением в эту папку, появятся в общей папке на этом ПК.</p>
+      </div>
+
+      <div class="group" data-cat="files">
+        <div class="group-title">Интеграция с системой</div>
+        <div class="field switch-field">
+          <div>
+            <label>Связать файлы .apk</label>
+            <span class="sub">Двойной щелчок по APK устанавливает его в ApkStart (только для текущего пользователя, без прав администратора)</span>
+          </div>
+          <button class="btn ghost sm" id="btnAssoc">Проверка…</button>
+        </div>
+        <div class="field">
+          <label>Папка данных среды выполнения (образ системы · установленные приложения · снимки)</label>
+          <div class="row">
+            <input id="setRuntimeDir" type="text" readonly placeholder="По умолчанию: папка данных пользователя на диске C" />
+            <button class="btn ghost sm" id="btnBrowseRuntimeDir">Обзор</button>
+            <button class="btn ghost sm" id="btnOpenData">Открыть</button>
+          </div>
+          <span class="sub">Здесь занимается больше всего места (несколько ГБ). Перенос на другой диск заметно разгрузит диск C; после изменения нужно перезапустить программу, существующие данные автоматически не переносятся (скопируйте вручную и удалите старую папку).</span>
+        </div>
+        <div class="field">
+          <label>Папка данных Android (приложения, игры и снимки быстрого запуска)</label>
+          <div class="row">
+            <input id="setAvdDir" type="text" readonly placeholder="По умолчанию: папка avd в папке среды выполнения" />
+            <button class="btn ghost sm" id="btnBrowseAvdDir">Обзор</button>
+            <button class="btn ghost sm" id="btnOpenAvdDir">Открыть</button>
+          </div>
+          <span class="sub">Больше всего места занимает именно это: раздел данных (по умолчанию 6 ГБ, объём увеличивается выше) и снимок быстрого запуска (около 2–3 ГБ). При нехватке места укажите другой диск (например D:) — применится после перезапуска программы; файлы в старой папке <code>apkstart.avd</code> Можно перенести целиком и затем удалить.</span>
+        </div>
+        <div class="field">
+          <label>Удалить ApkStart</label>
+          <div class="row">
+            <button class="btn ghost sm" id="btnUninstall">Удалить в один клик</button>
+            <span class="inline-note">Удаление снимает связь с .apk и убирает программу; в портативной версии папку нужно удалить вручную, как указано в подсказке.</span>
+          </div>
+        </div>
+      </div>
+      <div class="group" id="updateGroup" data-cat="about">
+        <div class="group-title">Обновление программы</div>
+        <div class="field">
+          <label>Текущая версия <span class="inline-note" id="updateCurrent">—</span></label>
+          <div class="row">
+            <span class="inline-note" id="updateState">Ещё не проверялось</span>
+            <span style="flex:1"></span>
+            <button class="btn ghost sm" id="btnCheckUpdate">Проверить обновления</button>
+            <button class="btn primary sm" id="btnDoUpdate" style="display:none" hidden>Обновить сейчас</button>
+          </div>
+          <div class="update-bar" id="updateBar" hidden><i id="updateBarFill"></i></div>
+          <span class="sub" id="updateNote">
+            Последняя версия берётся с GitHub (RoutineMiku/apkstart); облегчённая версия скачает портативный пакет и сама заменит файлы программы — среда выполнения, установленные приложения и снимки не затрагиваются.
+          </span>
+        </div>
+      </div>
+
+      <div class="group" id="aboutGroup" data-cat="about">
+        <div class="group-title">О программе</div>
+        <div class="about-box">
+          <div class="about-brand">
+            <img class="about-logo" src="assets/logo.png" alt="ApkStart Logo" draggable="false" />
+          </div>
+          <div class="about-qrs">
+            <div class="about-qr">
+              <img src="assets/wechat-qr.jpg" alt="QR-код официального аккаунта WeChat" width="112" height="112" />
+              <span class="about-qr-tip">Отсканируйте код, чтобы подписаться на аккаунт</span>
+            </div>
+            <div class="about-qr">
+              <img src="assets/douyin-qr.jpg" alt="QR-код Douyin" width="112" height="112" />
+              <span class="about-qr-tip">Douyin · 日常MIKU</span>
+            </div>
+          </div>
+          <div class="about-info">
+            <div class="about-name">ApkStart <span class="about-ver" id="aboutVer"></span></div>
+            <p class="note">Лаунчер Android-приложений для Windows с установкой по двойному щелчку: установка APK, ярлыки на рабочем столе, запуск в отдельном окне, двусторонний обмен файлами.</p>
+            <div class="about-links">
+              <button class="btn ghost sm" id="btnOpenManual">Открыть руководство (с решениями проблем)</button>
+              <a href="https://github.com/RoutineMiku/apkstart" target="_blank" rel="noopener">GitHub · RoutineMiku/apkstart</a>
+              <a href="https://v.douyin.com/9TIIxVCANig/" target="_blank" rel="noopener">Douyin · @日常MIKU (связь с автором)</a>
+              <span class="powered">Powered by <b>RoutineMiku</b></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    <footer class="modal-foot">
+      <span class="inline-note">Изменения настроек применяются сразу</span>
+      <button class="btn primary" id="btnDoneSettings">Готово</button>
+    </footer>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
