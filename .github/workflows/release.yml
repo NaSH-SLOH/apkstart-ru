@@ -71,6 +71,13 @@ jobs:
               gh release create $tag --title "ApkStart $tag" --generate-notes
             }
             if ($LASTEXITCODE -ne 0) { exit 1 }
+          } else {
+            # Релиз уже есть — обновляем описание, иначе правки в файле заметок
+            # никогда не доедут до опубликованной страницы (create пропускается).
+            if (Test-Path $notes) {
+              gh release edit $tag --notes-file $notes
+              if ($LASTEXITCODE -ne 0) { Write-Error "не удалось обновить описание релиза"; exit 1 }
+            }
           }
           $ok = $false
           for ($i = 1; $i -le 3 -and -not $ok; $i++) {
