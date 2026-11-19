@@ -1084,7 +1084,7 @@ function fillSettings(s) {
   if ($('setRenderSize')) $('setRenderSize').value = eng.renderSize || 'auto';
   if ($('setDataGB')) $('setDataGB').value = String(Number(eng.dataPartitionGB || 0));
   if ($('setFastDns')) $('setFastDns').checked = eng.fastDns !== false;
-  if ($('setLocale')) $('setLocale').value = eng.locale || 'zh-CN';
+  if ($('setLocale')) $('setLocale').value = eng.locale || 'ru-RU';
   if ($('setChineseIme')) $('setChineseIme').checked = eng.chineseIme !== false;
   if ($('setKeepSnapshot')) $('setKeepSnapshot').checked = eng.keepSnapshot !== false;
   $('setDisplayMode').value = d.mode === 'fullscreen' ? 'fullscreen' : 'window';

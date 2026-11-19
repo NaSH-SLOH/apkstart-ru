@@ -654,14 +654,21 @@ class Runtime {
     if (!this._freeformReady) {
       try { this._freeformReady = await client.ensureFreeform(); } catch (_) { /* ignore */ }
     }
-    // 中文环境（系统语言 + 中文输入法）每次**开机**只做一次。
-    // 系统语言靠 emulator -prop 注入（SELinux 保护，运行时改不了），这里补的是
-    // 应用级 locale / 时区，以及静默装好并启用随包带的谷歌拼音输入法。
-    // 用户可在设置里关掉自动配置（engine.chineseIme=false）。
+    const locale = this.settings.engine.locale || 'ru-RU';
+
+    // Язык системы применяется всегда — независимо от китайской раскладки.
+    // Раньше это жило внутри блока chineseIme, и при выключенной раскладке
+    // язык вообще не применялся.
+    try {
+      await client.ensureGuestLocale(locale);
+    } catch (e) {
+      this.log(`Не удалось применить язык системы: ${e.message}`);
+    }
+
+    // Китайская раскладка — только если пользователь её не отключил.
+    // Делается один раз за загрузку: поставить пиньинь и включить его.
     if (!this._chineseReady && this.settings.engine.chineseIme !== false) {
       try {
-        const locale = this.settings.engine.locale || 'zh-CN';
-        await client.ensureChineseLocale(locale);
         const path = require('path');
         const apk = path.join(this.appRoot, 'assets', 'PinyinIME.apk');
         const r = await client.ensureChineseIme(apk, {
@@ -671,39 +678,48 @@ class Runtime {
         // 否则一次偶发的 adb 抖动就会让这台机器永远没有中文输入法。
         if (r && r.ok) this._chineseReady = true;
         this.log(`Китайская раскладка: ${r.ok ? (r.installed ? 'установлена и включена' : 'готова') : (r.reason || 'не готова')}`);
-        // -change-locale 只在「全量引导」时执行并重启 framework；从 quickboot 快照
-        // 恢复时会被跳过。旧快照是英文的，所以检测到系统语言不对就作废快照、
-        // 让下次开机冷启动一次（带 -change-locale）。之后存的新快照就是中文的，
-        // 不用再重启。marker 保证一生只纠正一次。
-        await this._ensureSystemLocale(client, locale);
       } catch (e) {
         this.log(`Инициализация китайского окружения пропущена: ${e.message}`);
       }
+    }
+
+    // -change-locale выполняется только при полной загрузке и перезапускает
+    // framework; при восстановлении из снимка quickboot он пропускается.
+    // Поэтому при неверном языке снимок аннулируется, и следующая загрузка
+    // будет холодной — уже с нужным языком. Маркер гарантирует одну попытку.
+    try {
+      await this._ensureSystemLocale(client, locale);
+    } catch (e) {
+      this.log(`Проверка языка системы пропущена: ${e.message}`);
     }
     this.startWatchdog();
   }
 
   /**
-   * 系统 UI 语言校正（一次性）。
+   * Проверка языка системного интерфейса (одна попытка на язык).
    *
-   * 实测结论（很容易踩错）：-change-locale 生效后**不会**写 persist.sys.locale，
-   * ro.product.locale 也仍是镜像的 en-US；它真正改的是
-   * `settings system system_locales`（语言设置页显示「中文（中国）」，系统 UI 全中文）。
-   * 所以判断「中文是否已经生效」要看 system_locales，不是 getprop。
+   * Что важно знать: -change-locale не пишет persist.sys.locale, а
+   * ro.product.locale остаётся en-US от образа. Реально он меняет
+   * `settings system system_locales` — по нему и надо проверять.
    *
-   * -change-locale 只在「全量引导」时执行并重启 framework；从 quickboot 快照恢复时
-   * 会被跳过。旧快照是英文的，所以检测到不对就作废快照、让下次开机冷启动一次。
-   * 之后存的新快照就是中文的，不用再重启。marker 保证一生只纠正一次。
+   * -change-locale выполняется только при полной загрузке и перезапускает
+   * framework; при восстановлении из снимка quickboot он пропускается.
+   * Поэтому при неверном языке снимок аннулируется, и следующая загрузка
+   * будет холодной. Маркер гарантирует одну попытку на каждый язык.
    */
   async _ensureSystemLocale(client, locale) {
     const fs = require('fs');
     const path = require('path');
-    const want = String(locale || 'zh-CN');
+    const want = String(locale || 'ru-RU');
     if (want === 'off' || want === 'en-US') return;
-    // 已经生效（system_locales 是目标语言，或语言列表里第一项是它）
+    // Уже нужный язык? (system_locales может быть списком — сверяем начало)
     const cur = await client.shell('settings get system system_locales', { timeout: 8000 }).catch(() => '');
     const s = String(cur).trim();
-    if (s === want || s.indexOf(want) === 0 || /^zh[-_]/.test(s)) return;
+    if (s === want || s.indexOf(want) === 0) return;
+    // Разные варианты китайского взаимозаменяемы, но только когда цель —
+    // китайский. Раньше эта строка срабатывала при любом текущем zh-*,
+    // из-за чего смена на ru/ja/ko вообще никогда не применялась.
+    if (/^zh[-_]/i.test(want) && /^zh[-_]/i.test(s)) return;
     const marker = path.join(store.DATA_DIR, 'locale-' + want.replace(/[^a-zA-Z0-9_-]/g, '_') + '.done');
     if (fs.existsSync(marker)) return;
     try {

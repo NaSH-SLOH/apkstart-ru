@@ -620,11 +620,12 @@ class EmulatorEngine {
   }
 
   /**
-   * 要注入的系统语言。默认简体中文；用户可在设置里改（engine.locale），
-   * 设成 'en-US' 或 'off' 就回到镜像原生英文。
+   * Язык системы, который подставляется гостю. По умолчанию русский —
+   * это русский перевод. Пользователь может сменить его в настройках
+   * (engine.locale); 'en-US' или 'off' возвращают родной для образа английский.
    */
   _guestLocale() {
-    const v = String(this.settings?.engine?.locale || 'zh-CN').trim();
+    const v = String(this.settings?.engine?.locale || 'ru-RU').trim();
     if (!v || v === 'off' || /^false$/i.test(v)) return '';
     return v;
   }

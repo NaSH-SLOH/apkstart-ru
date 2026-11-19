@@ -76,9 +76,10 @@ const DEFAULT_SETTINGS = {
     // 网络加速：给模拟器指定国内公共 DNS。安卓默认的 10.0.2.3 要走主机 DNS，
     // VPN / 公司网 / 某些运营商下解析会拖到几百毫秒，视频类应用首屏会明显发卡。
     fastDns: true,
-    // 系统语言：开机时由 emulator -prop 注入（guest 里 setprop 会被 SELinux 拒绝）。
-    // 默认简体中文。设成 en-US 或 off 就回到镜像原生英文。
-    locale: 'zh-CN',
+    // Язык системы Android: подставляется при загрузке через emulator -change-locale
+    // (setprop внутри гостя SELinux не даёт). По умолчанию русский — это русский
+    // перевод. Значение 'en-US' или 'off' возвращает родной для образа английский.
+    locale: 'ru-RU',
     // 中文输入法：随包带 AOSP 谷歌拼音输入法，开机后静默安装并启用。
     // 系统镜像只带 LatinIME（英文键盘），不装就打不了中文。
     chineseIme: true,
@@ -274,6 +275,30 @@ const store = {
     s.engine.mode = 'builtin';
     for (const k of ['mumuPath', 'mumuIndex', 'mumuRenderProfile', 'mumuMemoryGB', 'mumuCores', 'fydeosHost']) {
       delete s.engine[k];
+    }
+    /**
+     * Язык системы Android. В оригинале по умолчанию был китайский, поэтому
+     * у всех, кто пользовался прежними версиями, в settings.json лежит
+     * locale: 'zh-CN' — и он перекрывает новый дефолт. Для русского перевода
+     * это неверно: один раз переводим такой конфиг на русский.
+     * Маркер нужен, чтобы не спорить с пользователем: если он потом сам
+     * выберет китайский, миграция больше не сработает.
+     */
+    if (s.engine.locale === 'zh-CN') {
+      const localeMarker = path.join(DATA_DIR, 'locale-ru-migrated.done');
+      if (!fs.existsSync(localeMarker)) {
+        s.engine.locale = 'ru-RU';
+        // Пишем и в сам конфиг: без этого следующий запуск снова прочитает
+        // zh-CN из файла, а маркер уже не даст миграции сработать.
+        // Сначала файл, потом маркер — если запись файла не удалась,
+        // миграция просто повторится в следующий раз, ничего не сломав.
+        try {
+          const raw = readJson(SETTINGS_FILE, {});
+          raw.engine = Object.assign({}, raw.engine, { locale: 'ru-RU' });
+          writeJson(SETTINGS_FILE, raw);
+        } catch (_) { /* ignore */ }
+        try { fs.writeFileSync(localeMarker, String(Date.now())); } catch (_) { /* ignore */ }
+      }
     }
     // 旧版本默认无头运行：应用进程能起来但屏幕上没有窗口，等效于「打不开」。
     // 无条件迁移到带窗口模式，且不再允许通过旧配置把它关掉。

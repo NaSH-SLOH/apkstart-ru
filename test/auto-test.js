@@ -983,7 +983,7 @@ const { AdbClient, friendlyInstallError, friendlyLaunchError } = require('../src
     assert(/agent\.setTitle\(/.test(appwin), '独立窗口打开时要真的改标题');
   });
 
-  await test('Китайская локаль: при загрузке внедряется locale, тихо ставится метод ввода пиньинь, captive portal с китайским узлом', () => {
+  await test('Язык системы: по умолчанию русский, внедряется через -change-locale, пиньинь ставится тихо, captive portal с китайским узлом', () => {
     const root = path.join(__dirname, '..');
     const emuJs = fs.readFileSync(path.join(root, 'src', 'core', 'emulator.js'), 'utf8');
     const adbJs = fs.readFileSync(path.join(root, 'src', 'core', 'adb.js'), 'utf8');
@@ -999,8 +999,14 @@ const { AdbClient, friendlyInstallError, friendlyLaunchError } = require('../src
     assert(!/-prop[\s\S]{0,80}persist\.sys\.locale/.test(emuCode),
       '不能再用无效的 -prop persist.sys.locale');
     assert(/_guestLocale/.test(emuJs), '要有可配置的语言来源');
-    // 默认中文
-    assert(/locale:\s*'zh-CN'/.test(storeJs), '默认语言必须是简体中文');
+    // По умолчанию русский: это русский перевод, и системный интерфейс
+    // Android должен открываться по-русски, а не по-китайски.
+    assert(/locale:\s*'ru-RU'/.test(storeJs), 'язык по умолчанию должен быть русский');
+    assert(/<option value="ru-RU"/.test(html), 'в списке языков должен быть русский');
+    // Проверка языка не должна выходить раньше времени при не-китайской цели:
+    // иначе смена на ru/ja/ko никогда не применяется к китайскому снимку.
+    assert(!/s\.indexOf\(want\) === 0 \|\| \/\^zh/.test(engJs),
+      'проверка языка не должна считать любой zh-* совпадением для не-китайской цели');
     assert(/chineseIme:\s*true/.test(storeJs), '默认开启中文输入法');
 
     // 输入法：随包带 APK、开机装好并启用
