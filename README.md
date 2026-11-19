@@ -4,8 +4,8 @@
 
 <p align="center"><img src="docs/images/logo.png" alt="ApkStart Logo" width="160" /></p>
 
-[![CI](https://github.com/RoutineMiku/apkstart/actions/workflows/ci.yml/badge.svg)](https://github.com/RoutineMiku/apkstart/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/RoutineMiku/apkstart?include_prereleases&sort=semver)](https://github.com/RoutineMiku/apkstart/releases)
+[![CI](https://github.com/NaSH_SLOn/apkstart-ru/actions/workflows/ci.yml/badge.svg)](https://github.com/NaSH_SLOn/apkstart-ru/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/NaSH_SLOn/apkstart-ru?include_prereleases&sort=semver)](https://github.com/NaSH_SLOn/apkstart-ru/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-0078D6.svg)](#)
 
@@ -51,10 +51,18 @@
 
 ## Скачать и пользоваться (без сборки)
 
-Содержимое обоих источников одинаковое, из Китая рекомендуется Gitee:
+**Это русский перевод.** Готовые файлы берите здесь:
+
+- GitHub: [github.com/NaSH_SLOn/apkstart-ru/releases](https://github.com/NaSH_SLOn/apkstart-ru/releases)
+
+Оригинальная китайская версия (если нужна именно она):
 
 - GitHub: [github.com/RoutineMiku/apkstart/releases](https://github.com/RoutineMiku/apkstart/releases)
-- Gitee: [gitee.com/daily-miku/apkstart/releases](https://gitee.com/daily-miku/apkstart/releases) (прямое подключение из Китая намного быстрее)
+- Gitee: [gitee.com/daily-miku/apkstart/releases](https://gitee.com/daily-miku/apkstart/releases) (прямое подключение из Китая быстрее)
+
+> ⚠️ В релизах оригинального репозитория интерфейс **китайский**.
+> Пока в этом форке нет собственных релизов — используйте готовую сборку
+> `apkstart-ru-portable` или соберите её из исходников (см. ниже).
 
 Установочные пакеты (четыре варианта, содержимое и номер версии полностью совпадают):
 
@@ -66,7 +74,7 @@
 | Облегчённая портативная версия | `ApkStart-v*-win64-portable.zip` (96 MiB, после распаковки ~227 MB) | Хочется только попробовать, а среду выполнения догрузить из сети при первом запуске |
 
 > Во всех вариантах в `ApkStart.exe` записаны **фирменный значок + ресурсы версии** (FileDescription = `ApkStart — среда запуска Android-приложений`,
-> CompanyName = `RoutineMiku`, версия синхронизирована с `package.json`), это уже не значок Electron по умолчанию и не номер версии `33.x`.
+> версия синхронизирована с `package.json`), это уже не значок Electron по умолчанию и не номер версии `33.x`.
 > При сборке из исходного кода: `npm run pack` (облегчённая) / `npm run pack:full` (полная) / `npm run build:msix` (пакет для магазина).
 
 ### Как достигается заполнение экрана
