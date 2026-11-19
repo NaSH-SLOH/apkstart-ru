@@ -4,8 +4,6 @@
 
 <p align="center"><img src="docs/images/logo.png" alt="ApkStart Logo" width="160" /></p>
 
-[![CI](https://github.com/NaSH-SLOH/apkstart-ru/actions/workflows/ci.yml/badge.svg)](https://github.com/NaSH-SLOH/apkstart-ru/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/NaSH-SLOH/apkstart-ru?include_prereleases&sort=semver)](https://github.com/NaSH-SLOH/apkstart-ru/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-0078D6.svg)](#)
 
