@@ -7,13 +7,13 @@
   "author": "NaSH-SLOn (русский перевод)",
   "license": "MIT",
   "private": true,
-  "homepage": "https://github.com/nash-slon/apkstart-ru#readme",
+  "homepage": "https://github.com/NaSH-SLOH/apkstart-ru#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nash-slon/apkstart-ru.git"
+    "url": "git+https://github.com/NaSH-SLOH/apkstart-ru.git"
   },
   "bugs": {
-    "url": "https://github.com/nash-slon/apkstart-ru/issues"
+    "url": "https://github.com/NaSH-SLOH/apkstart-ru/issues"
   },
   "keywords": [
     "android",
