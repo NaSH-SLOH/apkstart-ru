@@ -4,16 +4,16 @@
   "version": "0.6.2",
   "description": "Запуск Android-приложений на Windows: установка APK двойным щелчком, отдельные окна, ярлыки. Русский перевод интерфейса.",
   "main": "src/main.js",
-  "author": "NaSH_SLOn (русский перевод)",
+  "author": "NaSH-SLOn (русский перевод)",
   "license": "MIT",
   "private": true,
-  "homepage": "https://github.com/NaSH_SLOn/apkstart-ru#readme",
+  "homepage": "https://github.com/nash-slon/apkstart-ru#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NaSH_SLOn/apkstart-ru.git"
+    "url": "git+https://github.com/nash-slon/apkstart-ru.git"
   },
   "bugs": {
-    "url": "https://github.com/NaSH_SLOn/apkstart-ru/issues"
+    "url": "https://github.com/nash-slon/apkstart-ru/issues"
   },
   "keywords": [
     "android",
