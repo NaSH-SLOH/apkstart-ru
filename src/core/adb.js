@@ -1126,6 +1126,40 @@ class AdbClient {
   }
 
   /**
+   * Отключает китайскую клавиатуру (пиньинь) и возвращает системную.
+   *
+   * Пакет не удаляется — только отключается, чтобы флажок в настройках
+   * можно было включить обратно. Если пиньинь был клавиатурой по умолчанию,
+   * сначала переключаемся на другую включённую, иначе останемся без ввода.
+   *
+   * @returns {Promise<{ok:boolean, switchedTo?:string, reason?:string}>}
+   */
+  async disableChineseIme() {
+    const IME_PKG = 'com.android.inputmethod.pinyin';
+    try {
+      const listOut = await this.shell('ime list -s', { timeout: 10000 }).catch(() => '');
+      const enabled = String(listOut).split('\n').map((s) => s.trim()).filter(Boolean);
+      const pinyin = enabled.find((s) => s.startsWith(IME_PKG)) || '';
+      // Пиньиня нет или он даже не включён — работы не остаётся.
+      if (!pinyin) return { ok: true, switchedTo: '' };
+
+      // Сначала — на что переключаться. Текущая клавиатура, если это не пиньинь.
+      const cur = String(await this.shell('settings get secure default_input_method', { timeout: 8000 }).catch(() => '')).trim();
+      const alt = (cur && !cur.startsWith(IME_PKG) ? cur : '')
+        || enabled.find((s) => !s.startsWith(IME_PKG))
+        || '';
+
+      const cmds = [];
+      if (alt) cmds.push(`settings put secure default_input_method ${alt}`);
+      cmds.push(`ime disable ${pinyin}`);
+      await this.shell(cmds.join(' ; '), { timeout: 12000 }).catch(() => '');
+      return { ok: true, switchedTo: alt };
+    } catch (e) {
+      return { ok: false, reason: e.message };
+    }
+  }
+
+  /**
    * Применяет язык системы на уровне приложений.
    * persist.sys.locale защищён SELinux и в работающей системе не меняется —
    * по-настоящему язык ставит emulator при загрузке (-change-locale).

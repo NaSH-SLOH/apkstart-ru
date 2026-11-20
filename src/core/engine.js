@@ -665,19 +665,28 @@ class Runtime {
       this.log(`Не удалось применить язык системы: ${e.message}`);
     }
 
-    // Китайская раскладка — только если пользователь её не отключил.
-    // Делается один раз за загрузку: поставить пиньинь и включить его.
-    if (!this._chineseReady && this.settings.engine.chineseIme !== false) {
+    // Китайская раскладка. По умолчанию выключена: остаётся системная
+    // клавиатура образа (Gboard), которая умеет по-русски.
+    // Выполняется один раз за загрузку.
+    if (!this._chineseReady) {
       try {
-        const path = require('path');
-        const apk = path.join(this.appRoot, 'assets', 'PinyinIME.apk');
-        const r = await client.ensureChineseIme(apk, {
-          setDefault: this.settings.engine.chineseImeDefault !== false,
-        });
-        // 只有真的成功了才置位。失败时允许下一次 prepare() 重试 ——
-        // 否则一次偶发的 adb 抖动就会让这台机器永远没有中文输入法。
-        if (r && r.ok) this._chineseReady = true;
-        this.log(`Китайская раскладка: ${r.ok ? (r.installed ? 'установлена и включена' : 'готова') : (r.reason || 'не готова')}`);
+        if (this.settings.engine.chineseIme === true) {
+          const path = require('path');
+          const apk = path.join(this.appRoot, 'assets', 'PinyinIME.apk');
+          const r = await client.ensureChineseIme(apk, {
+            setDefault: this.settings.engine.chineseImeDefault !== false,
+          });
+          // 只有真的成功了才置位。失败时允许下一次 prepare() 重试 ——
+          // 否则一次偶发的 adb 抖动就会让这台机器永远没有中文输入法。
+          if (r && r.ok) this._chineseReady = true;
+          this.log(`Китайская раскладка: ${r.ok ? (r.installed ? 'установлена и включена' : 'готова') : (r.reason || 'не готова')}`);
+        } else {
+          // Раскладка выключена — снимаем ранее установленный пиньинь,
+          // иначе он останется клавиатурой по умолчанию у тех, кто обновился.
+          const r = await client.disableChineseIme();
+          if (r && r.ok) this._chineseReady = true;
+          if (r && r.switchedTo) this.log(`Китайская раскладка отключена, клавиатура: ${r.switchedTo}`);
+        }
       } catch (e) {
         this.log(`Инициализация китайского окружения пропущена: ${e.message}`);
       }

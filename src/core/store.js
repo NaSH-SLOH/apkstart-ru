@@ -80,10 +80,11 @@ const DEFAULT_SETTINGS = {
     // (setprop внутри гостя SELinux не даёт). По умолчанию русский — это русский
     // перевод. Значение 'en-US' или 'off' возвращает родной для образа английский.
     locale: 'ru-RU',
-    // 中文输入法：随包带 AOSP 谷歌拼音输入法，开机后静默安装并启用。
-    // 系统镜像只带 LatinIME（英文键盘），不装就打不了中文。
-    chineseIme: true,
-    chineseImeDefault: true,
+    // Китайская раскладка (пиньинь). По умолчанию выключена: остаётся
+    // системная клавиатура образа (Gboard), она умеет по-русски.
+    // Включается в настройках, если нужен ввод по-китайски.
+    chineseIme: false,
+    chineseImeDefault: false,
     // 快照：quickboot 内存快照让二次启动只要几秒，代价是磁盘上多一份约 2~3GB 的
     // ram.bin。磁盘紧张时可以关掉（只影响启动速度，不影响应用数据）。
     keepSnapshot: true,
@@ -298,6 +299,26 @@ const store = {
           writeJson(SETTINGS_FILE, raw);
         } catch (_) { /* ignore */ }
         try { fs.writeFileSync(localeMarker, String(Date.now())); } catch (_) { /* ignore */ }
+      }
+    }
+    /**
+     * Китайская раскладка. В оригинале она включалась по умолчанию, поэтому
+     * у обновившихся в settings.json лежит chineseIme: true — и он перекрывает
+     * новый дефолт. Для русского перевода это лишнее: один раз выключаем.
+     * Маркер по той же причине, что и с языком: осознанный выбор пользователя
+     * после миграции не трогаем.
+     */
+    if (s.engine.chineseIme === true) {
+      const imeMarker = path.join(DATA_DIR, 'ime-system-migrated.done');
+      if (!fs.existsSync(imeMarker)) {
+        s.engine.chineseIme = false;
+        s.engine.chineseImeDefault = false;
+        try {
+          const raw = readJson(SETTINGS_FILE, {});
+          raw.engine = Object.assign({}, raw.engine, { chineseIme: false, chineseImeDefault: false });
+          writeJson(SETTINGS_FILE, raw);
+        } catch (_) { /* ignore */ }
+        try { fs.writeFileSync(imeMarker, String(Date.now())); } catch (_) { /* ignore */ }
       }
     }
     // 旧版本默认无头运行：应用进程能起来但屏幕上没有窗口，等效于「打不开」。

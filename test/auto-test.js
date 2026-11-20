@@ -1007,7 +1007,13 @@ const { AdbClient, friendlyInstallError, friendlyLaunchError } = require('../src
     // иначе смена на ru/ja/ko никогда не применяется к китайскому снимку.
     assert(!/s\.indexOf\(want\) === 0 \|\| \/\^zh/.test(engJs),
       'проверка языка не должна считать любой zh-* совпадением для не-китайской цели');
-    assert(/chineseIme:\s*true/.test(storeJs), '默认开启中文输入法');
+    // Китайская раскладка по умолчанию выключена: остаётся системная
+    // клавиатура образа (Gboard), она умеет по-русски.
+    assert(/chineseIme:\s*false/.test(storeJs), 'китайская раскладка должна быть выключена по умолчанию');
+    // Выключение должно реально снимать ранее установленный пиньинь,
+    // иначе у обновившихся он останется клавиатурой по умолчанию.
+    assert(/disableChineseIme/.test(adbJs), 'нужна функция отключения пиньиня');
+    assert(/disableChineseIme/.test(engJs), 'prepare() должен её вызывать');
 
     // 输入法：随包带 APK、开机装好并启用
     assert(fs.existsSync(path.join(root, 'assets', 'PinyinIME.apk')), '缺少 PinyinIME.apk');
