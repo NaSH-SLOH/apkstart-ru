@@ -24,6 +24,14 @@ const { Sources } = require('./sources');
 
 const OWNER = 'RoutineMiku';
 const REPO = 'apkstart';
+/**
+ * Русский форк. Релизы этого перевода публикуются в отдельном репозитории,
+ * а в релизах автора лежит китайская сборка. Принять её как обновление —
+ * значит затереть перевод, поэтому апдейт предлагается только со своего репозитория.
+ */
+const FORK_OWNER = 'NaSH-SLOH';
+const FORK_REPO = 'apkstart-ru';
+const FORK_RELEASES = `https://github.com/${FORK_OWNER}/${FORK_REPO}/releases`;
 
 /** PowerShell 单引号字符串：内部的 ' 要写成 '' */
 function psq(s) {
@@ -95,6 +103,13 @@ class Updater {
    */
   async check(opts = {}) {
     const merged = await this.sources.latest({ force: !!opts.force });
+    /**
+     * Источник версий — репозиторий автора оригинала, но обновлением считается
+     * только релиз из репозитория форка. Иначе приложение предлагало бы
+     * китайскую сборку и после установки русский перевод пропадал.
+     */
+    const fromFork = String(merged.htmlUrl || '').toLowerCase()
+      .includes(`${FORK_OWNER}/${FORK_REPO}`.toLowerCase());
     const pick = (re) => merged.assets.find((a) => re.test(String(a.name || '')));
     // 发行版里同时挂着「便携包」和「运行时整包」（ApkStart-runtime-*.zip）。
     // 兜底的 .zip 匹配必须把运行时整包排除掉：某次发布如果只有运行时整包、
@@ -134,9 +149,12 @@ class Updater {
       sources: merged.sources,
       unreachable: merged.unreachable,
       flavor: this.flavor,
-      hasUpdate: cmpVer(merged.tag, this.current) > 0,
+      hasUpdate: fromFork && cmpVer(merged.tag, this.current) > 0,
       current: this.current,
-      canAutoApply: !!asset && (!!asset.url || !!(asset.parts && asset.parts.length)),
+      // Автоприменение разрешаем только для сборки форка.
+      canAutoApply: fromFork && !!asset && (!!asset.url || !!(asset.parts && asset.parts.length)),
+      // Куда вести кнопку «открыть страницу релиза»: у форка свой адрес.
+      htmlUrl: fromFork ? merged.htmlUrl : FORK_RELEASES,
     };
     this._last = this.latest;
     return this.latest;
@@ -441,7 +459,8 @@ class Updater {
 
   /** 打不开 UI 的场景（或没有可自动安装的资产）时，把发布页丢给浏览器 */
   static repoUrl() {
-    return `https://github.com/${OWNER}/${REPO}/releases`;
+    // Страница релизов форка: у автора оригинала лежит китайская сборка.
+    return FORK_RELEASES;
   }
 }
 

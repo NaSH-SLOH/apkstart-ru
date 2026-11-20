@@ -1604,6 +1604,8 @@ const { AdbClient, friendlyInstallError, friendlyLaunchError } = require('../src
     u.sources.latest = async () => ({
       version: '9.9.9',
       tag: 'v9.9.9',
+      // Релиз из репозитория форка: только такие считаются обновлением.
+      htmlUrl: 'https://github.com/NaSH-SLOH/apkstart-ru/releases/tag/v9.9.9',
       assets: [{
         name: 'ApkStart-v9.9.9-win64-portable.zip',
         size: 0,
@@ -1616,6 +1618,26 @@ const { AdbClient, friendlyInstallError, friendlyLaunchError } = require('../src
     const info = await u.check({ force: true });
     assert(info.asset && info.asset.parts && info.asset.parts.length === 2, 'parts 必须保留到 asset 上');
     assert(info.canAutoApply === true, '有分片就应判定为可自动更新');
+  });
+
+  await test('Обновление из репозитория автора не предлагается: там китайская сборка', async () => {
+    const { Updater } = require('../src/core/updater');
+    const u = new Updater({
+      currentVersion: '0.6.2', exePath: path.join(TMP, 'A.exe'), isPackaged: true, dataDir: TMP,
+      settings: () => ({}),
+    });
+    // Автор выпустил версию новее — но в ней нет русского перевода.
+    u.sources.latest = async () => ({
+      version: '0.6.3',
+      tag: 'v0.6.3',
+      htmlUrl: 'https://github.com/RoutineMiku/apkstart/releases/tag/v0.6.3',
+      assets: [{ name: 'ApkStart-v0.6.3-win64-portable.zip', size: 1, url: 'https://x/y.zip', urls: [] }],
+      sources: [], unreachable: [],
+    });
+    const info = await u.check({ force: true });
+    assert(info.hasUpdate === false, 'чужую сборку нельзя предлагать как обновление');
+    assert(info.canAutoApply === false, 'автоприменение чужой сборки должно быть запрещено');
+    assert(/NaSH-SLOH\/apkstart-ru/.test(info.htmlUrl), 'кнопка должна вести на релизы форка');
   });
 
   await test('Два источника: при объединении версий берутся только ассеты этой версии, старый пакет не выдаётся за новый', async () => {
