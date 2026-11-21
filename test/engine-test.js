@@ -409,6 +409,55 @@ function assert(cond, msg) { if (!cond) throw new Error(msg || '断言失败'); 
     assert(html.includes('https://github.com/RoutineMiku/apkstart'), '缺少原项目链接');
   });
 
+  await test('Снятие замков AVD: clearLocks сообщает результат, а не молчит', async () => {
+    const { EmulatorEngine } = require('../src/core/emulator');
+    const emu = new EmulatorEngine(path.join(__dirname, '..'));
+    const dir = path.join(TMP, 'avd-lock-test');
+    fs.mkdirSync(dir, { recursive: true });
+
+    // 1) Замков нет — снимать нечего, AVD свободен.
+    assert(emu.clearLocks(dir) === true, 'пустой каталог должен считаться свободным');
+
+    // 2) hardware-qemu.ini.lock — это ПАПКА с pid внутри, как у настоящего эмулятора.
+    const lockDir = path.join(dir, 'hardware-qemu.ini.lock');
+    fs.mkdirSync(lockDir, { recursive: true });
+    fs.writeFileSync(path.join(lockDir, 'pid'), '12345');
+    fs.writeFileSync(path.join(dir, 'multiinstance.lock'), '');
+    assert(emu.clearLocks(dir) === true, 'замки должны сниматься');
+    assert(!fs.existsSync(lockDir), 'каталог-замок должен удаляться рекурсивно');
+    assert(!fs.existsSync(path.join(dir, 'multiinstance.lock')), 'файл-замок должен удаляться');
+
+    // 3) Замок снять не удалось → обязательно false.
+    //    Иначе вызывающий считает AVD свободным, запускает эмулятор и получает
+    //    FATAL "Running multiple emulators with the same AVD".
+    fs.mkdirSync(lockDir, { recursive: true });
+    fs.writeFileSync(path.join(lockDir, 'pid'), '12345');
+    const origRm = fs.rmSync;
+    let result;
+    try {
+      fs.rmSync = () => { const e = new Error('EBUSY: resource busy or locked'); e.code = 'EBUSY'; throw e; };
+      result = emu.clearLocks(dir);
+    } finally {
+      fs.rmSync = origRm;
+    }
+    assert(result === false, 'если замок не снят, clearLocks обязан вернуть false');
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  await test('Зависший qemu без слушающего порта тоже считается сиротой', async () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'core', 'emulator.js'), 'utf8');
+    // Раньше pid попадал в набор только для процессов, слушающих порт.
+    // Зависший qemu порт не слушает, но замок держит — запуск из-за него падал.
+    assert(!/qemuPids\.has\(m\[2\]\)/.test(src),
+      'нельзя отбирать qemu только по признаку «слушает порт»');
+    assert(/\^qemu\|\^emulator/i.test(src), 'qemu и emulator должны искаться по имени');
+    // После неудачного снятия замков нельзя выходить — надо убивать процесс.
+    assert(/if \(this\.clearLocks\(avdDir\)\) return 0;/.test(src),
+      'после clearLocks нужна проверка, что замки реально сняты');
+    assert(/повышенными правами/.test(src),
+      'если процесс защищён, нужен понятный текст вместо невнятного FATAL');
+  });
+
   console.log(results.join('\n'));
   console.log(`\n结果：${passed} 通过，${failed} 失败\n`);
   try { fs.rmSync(TMP, { recursive: true, force: true }); } catch (_) { /* ignore */ }

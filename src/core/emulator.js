@@ -147,7 +147,8 @@ class EmulatorEngine {
   }
 
   /**
-   * 清掉上次异常退出留下的锁。
+   * Удаляет файлы замков AVD. Возвращает true, если после вызова замков не осталось.
+   *
    * 注意 hardware-qemu.ini.lock 是**目录**不是文件，bsdtar 式的 rmSync(force) 删不掉它，
    * 于是模拟器会一直报 "Running multiple emulators with the same AVD" 起不来
    * （被强杀过一次就会这样），必须递归删。
@@ -161,6 +162,13 @@ class EmulatorEngine {
         } catch (_) { /* 被占用就跳过，下次再清 */ }
       }
     } catch (_) { /* ignore */ }
+    // Замок мог быть открыт эксклюзивно зависшим qemu — тогда rmSync молча
+    // ничего не удалил. Сообщаем честно, чтобы вызывающий не считал AVD свободным.
+    try {
+      return fs.readdirSync(avdDir).filter((f) => /\.lock$/i.test(f)).length === 0;
+    } catch (_) {
+      return false;
+    }
   }
 
   /**
@@ -230,17 +238,22 @@ class EmulatorEngine {
   async killOrphanProcesses({ onLog = () => {} } = {}) {
     if (process.platform !== 'win32') return 0;
     const avdDir = path.join(this.provisioner.paths().avdHome, `${AVD_NAME}.avd`);
+    const listLocks = () => {
+      try { return fs.readdirSync(avdDir).filter((f) => /\.lock$/i.test(f)); } catch (_) { return []; }
+    };
 
     // 快速路径（每次冷启动都会走到）：
     //  - 没有 .lock → 不可能有活着的 emulator 占着这个 AVD，直接返回；
-    //  - 有 lock 但端口没人监听 → 只是上次强杀留下的残留目录，清掉即可。
+    //  - 有 lock 但端口没人监听 → 通常是上次强杀留下的残留目录，清掉即可。
     // 以前无论什么情况都要跑一次 wmic（1~3 秒，还很吃 CPU），冷启动时明显拖慢。
-    let locks = [];
-    try { locks = fs.readdirSync(avdDir).filter((f) => /\.lock$/i.test(f)); } catch (_) { locks = []; }
-    if (!locks.length) return 0;
+    if (!listLocks().length) return 0;
     if (!(await this._anyEmulatorPortAlive())) {
-      this.clearLocks(avdDir);
-      return 0;
+      // Зависший qemu может не слушать порт, но держать замок открытым
+      // эксклюзивно: rmSync тогда молча ничего не удалит, а следующий запуск
+      // получит FATAL "Running multiple emulators with the same AVD".
+      // Поэтому уходим только если замки реально исчезли.
+      if (this.clearLocks(avdDir)) return 0;
+      onLog('Замок AVD не снимается — ищу процесс, который его держит');
     }
 
     const pids = new Set();
@@ -252,20 +265,17 @@ class EmulatorEngine {
         if (pid) pids.add(pid);
       }
     } catch (_) { /* ignore */ }
-    // 2) 兜底：按进程名 + 端口找活着的 qemu（tasklist/netstat 比 wmic 快一个量级）
+    // 2) 兜底：按进程名找 qemu / emulator。
+    //    Раньше сюда попадали только те, что слушают порт. Зависший процесс
+    //    порт не слушает, но замок держит — именно он и мешал запуску.
     try {
-      const [tl, ns] = await Promise.all([
-        new Promise((res) => execFile('tasklist', ['/FO', 'CSV', '/NH'], { windowsHide: true, maxBuffer: 8 * 1024 * 1024 }, (e, o) => res(e ? '' : String(o || '')))),
-        new Promise((res) => execFile('netstat', ['-ano', '-p', 'TCP'], { windowsHide: true, maxBuffer: 8 * 1024 * 1024 }, (e, o) => res(e ? '' : String(o || '')))),
-      ]);
-      const qemuPids = new Set();
+      const tl = await new Promise((res) => execFile(
+        'tasklist', ['/FO', 'CSV', '/NH'], { windowsHide: true, maxBuffer: 8 * 1024 * 1024 },
+        (e, o) => res(e ? '' : String(o || '')),
+      ));
       for (const line of tl.split('\n')) {
         const m = /^"([^"]+)","(\d+)"/.exec(line.trim());
-        if (m && /qemu|emulator/i.test(m[1])) qemuPids.add(m[2]);
-      }
-      for (const line of ns.split('\n')) {
-        const m = /:(\d+)\s+\S+\s+LISTENING\s+(\d+)/i.exec(line);
-        if (m && qemuPids.has(m[2])) pids.add(Number(m[2]));
+        if (m && /^qemu|^emulator/i.test(m[1])) pids.add(Number(m[2]));
       }
     } catch (_) { /* 拿不到进程列表就只靠锁文件里的 pid */ }
     pids.delete(process.pid);
@@ -278,7 +288,12 @@ class EmulatorEngine {
       execFile('taskkill', ['/PID', String(pid), '/T', '/F'], { windowsHide: true }, () => r());
     })));
     await sleep(1200);
-    this.clearLocks(avdDir);
+    if (!this.clearLocks(avdDir)) {
+      // Процесс защищён (запущен от администратора) — убить его без UAC нельзя.
+      // Лучше сказать прямо, чем падать позже с невнятным FATAL от эмулятора.
+      onLog('Не удалось снять замок AVD: процесс эмулятора запущен с повышенными правами. '
+        + 'Завершите qemu-system-x86_64.exe от имени администратора или перезагрузите компьютер.');
+    }
     return pids.size;
   }
 
