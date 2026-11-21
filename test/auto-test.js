@@ -694,7 +694,11 @@ const { AdbClient, friendlyInstallError, friendlyLaunchError } = require('../src
     const s = store.getSettings();
     assert(s.engine.headless === false, 'headless 必须被迁移成 false');
     assert(s.hideAfterLaunch === false, 'hideAfterLaunch 必须为 false');
-    assert(s.autoStart === true && s.autoDeploy === true, '开机自启/一键部署默认开启');
+    // Автозапуск и прогрев по умолчанию выключены: иначе ApkStart стартует
+    // вместе с Windows и держит эмулятор на 2–3 ГБ памяти в фоне.
+    assert(s.autoStart === false, 'автозапуск должен быть выключен по умолчанию');
+    assert(s.engine.prewarm === false, 'прогрев должен быть выключен по умолчанию');
+    assert(s.autoDeploy === true, '一键部署默认开启');
     assert(s.createStartMenuShortcut === true, '开始菜单快捷方式默认开启');
   });
 

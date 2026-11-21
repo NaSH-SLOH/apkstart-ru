@@ -51,7 +51,10 @@ const DEFAULT_SETTINGS = {
     memoryMB: 0,             // 0 = 由 doctor 按机器内存自动决定
     cores: 0,                // 0 = 自动
     autoMemory: true,        // 零配置：自动推导内存/核心/磁盘/渲染参数
-    idleShutdownMinutes: 15,
+    // Простой, после которого среда выполнения выгружается. Было 15 минут —
+    // слишком долго: эмулятор держит 2–3 ГБ оперативной памяти и висел
+    // в фоне, даже когда им никто не пользуется.
+    idleShutdownMinutes: 5,
     startVisible: true,
     // 必须带窗口：无头模式 SurfaceFlinger 不出 VSYNC，应用进程活着但屏幕上什么都没有。
     // 带窗口的模拟器是原生 60fps + 原生鼠标键盘，ApkStart 只负责把它打扮成应用窗口。
@@ -98,9 +101,11 @@ const DEFAULT_SETTINGS = {
     deepTrim: false,         // 深度裁剪系统后台包（Play 商店/向导等），默认不动系统
     // balanced=让出前台 | performance=qemu Normal | game=qemu High + 低延迟输入
   priorityMode: 'balanced',
-    // 预热：启动 ApkStart 后在后台把安卓环境引导好，第一次点应用几乎不用等。
-    // 代价是常驻约 1GB 内存（和 WSA / 应用宝电脑版一样的取舍），可随时关掉。
-    prewarm: true,
+    // Прогрев: при запуске ApkStart сразу поднимать Android в фоне, чтобы
+    // первое приложение открывалось быстрее. По умолчанию выключено:
+    // в русском переводе не хотим держать эмулятор на 2–3 ГБ памяти, пока
+    // программой не пользуются. Включается в настройках.
+    prewarm: false,
     // 多窗口（B 方案）：允许同时打开多个应用、各自独立窗口。默认关闭，
     // 保持「开新停旧」的单窗口行为；开启后靠墓碑机制回收后台，资源可控。
     multiWindow: false,
@@ -154,7 +159,10 @@ const DEFAULT_SETTINGS = {
   freeform: false,           // 共享一个运行时窗口，不再用 Android freeform 小窗
   hideAfterLaunch: false,    // 主进程必须常驻，否则一退出就把 Android 运行时杀掉了
   notifyOnInstall: true,
-  autoStart: true,           // 开机自启，默认开启，用户无需设置
+  // Автозапуск при входе в Windows. В оригинале был включён по умолчанию —
+  // из-за этого ApkStart стартовал сам, грел Android в фоне и висел в трее.
+  // В русском переводе по умолчанию выключен; включается в настройках.
+  autoStart: false,
   autoDeploy: true,          // 首次运行自动完成全部部署，不再分 1~5 步
   // 启动欢迎卡：lastDate 记录上次自动弹出的日期（手动打开时一天最多一次），
   // disabled = 用户勾了「不再自动弹出」。
@@ -319,6 +327,38 @@ const store = {
           writeJson(SETTINGS_FILE, raw);
         } catch (_) { /* ignore */ }
         try { fs.writeFileSync(imeMarker, String(Date.now())); } catch (_) { /* ignore */ }
+      }
+    }
+    /**
+     * Фоновые процессы. В оригинале автозапуск и прогрев были включены по
+     * умолчанию: ApkStart стартовал вместе с Windows, поднимал Android в фоне
+     * и держал 2–3 ГБ памяти, даже когда программой не пользовались.
+     * Для русского перевода это лишнее — один раз выключаем оба.
+     * Маркер, как и выше, защищает осознанный выбор пользователя.
+     */
+    {
+      const bgMarker = path.join(DATA_DIR, 'no-background-migrated.done');
+      if (!fs.existsSync(bgMarker)) {
+        const patch = {};
+        if (s.engine.prewarm === true) { s.engine.prewarm = false; patch.prewarm = false; }
+        if (s.autoStart === true) { s.autoStart = false; patch.autoStart = false; }
+        // 15 минут было старым значением по умолчанию, а не осознанным выбором:
+        // эмулятор всё это время держал память. Сокращаем до новых 5 минут.
+        if (Number(s.engine.idleShutdownMinutes) === 15) {
+          s.engine.idleShutdownMinutes = 5;
+          patch.idleShutdownMinutes = 5;
+        }
+        if (Object.keys(patch).length) {
+          try {
+            const raw = readJson(SETTINGS_FILE, {});
+            const engPatch = Object.assign({}, patch);
+            delete engPatch.autoStart;
+            raw.engine = Object.assign({}, raw.engine, engPatch);
+            if (patch.autoStart !== undefined) raw.autoStart = patch.autoStart;
+            writeJson(SETTINGS_FILE, raw);
+          } catch (_) { /* ignore */ }
+        }
+        try { fs.writeFileSync(bgMarker, String(Date.now())); } catch (_) { /* ignore */ }
       }
     }
     // 旧版本默认无头运行：应用进程能起来但屏幕上没有窗口，等效于「打不开」。

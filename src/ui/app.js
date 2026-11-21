@@ -1062,7 +1062,7 @@ function fillSettings(s) {
   if ($('setConnections')) $('setConnections').value = Number((s.runtime && s.runtime.downloadConnections) || 8);
   $('setAudio').checked = s.engine.audio !== false;
   $('setLiteMode').checked = s.engine.liteMode !== false;
-  $('setPrewarm').checked = s.engine.prewarm !== false;
+  $('setPrewarm').checked = s.engine.prewarm === true;
   $('setPriorityMode').value = ['performance', 'game'].includes(s.engine.priorityMode)
     ? s.engine.priorityMode : 'balanced';
   $('setDeepTrim').checked = !!s.engine.deepTrim;
@@ -1078,7 +1078,7 @@ function fillSettings(s) {
   $('setSharedDir').value = s.sharedDir || '';
   $('setDeviceSharedDir').value = s.deviceSharedDir || '';
   const d = s.display || {};
-  $('setAutoStart').checked = s.autoStart !== false;
+  $('setAutoStart').checked = s.autoStart === true;
   const eng = s.engine || {};
   if ($('setResourceMode')) $('setResourceMode').value = eng.resourceMode || 'balanced';
   if ($('setRenderSize')) $('setRenderSize').value = eng.renderSize || 'auto';
