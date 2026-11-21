@@ -700,6 +700,22 @@ const { AdbClient, friendlyInstallError, friendlyLaunchError } = require('../src
     assert(s.engine.prewarm === false, 'прогрев должен быть выключен по умолчанию');
     assert(s.autoDeploy === true, '一键部署默认开启');
     assert(s.createStartMenuShortcut === true, '开始菜单快捷方式默认开启');
+    // При выходе среда должна гаситься: иначе qemu остаётся на 2–3 ГБ,
+    // потому что watchdog простоя живёт внутри ApkStart и умирает вместе с ним.
+    assert(s.engine.stopOnExit === true, 'по умолчанию среда должна выключаться при выходе');
+  });
+
+  await test('Выход из ApkStart действительно останавливает виртуальную машину', () => {
+    const mainJs = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.js'), 'utf8');
+    // Раньше releaseRuntime() вызывал только dispose(), который намеренно
+    // не трогал qemu — машина оставалась жить после закрытия программы.
+    assert(/const releaseRuntime = async/.test(mainJs), 'releaseRuntime должен быть асинхронным');
+    assert(/runtime\.stop\(\{ graceful: true \}\)/.test(mainJs),
+      'при выходе среда должна останавливаться по-хорошему (со снимком)');
+    assert(/engine\?\.stopOnExit !== false/.test(mainJs), 'нужно учитывать настройку stopOnExit');
+    // Среда не должна останавливаться дважды: второй before-quit выходит сразу.
+    assert(/if \(quitReady\) return;/.test(mainJs), 'повторный before-quit не должен ничего повторять');
+    assert(/runtimeReleased/.test(mainJs), 'нужен флаг, что среда уже остановлена');
   });
 
   await test('Подгонка дисплея: окно/полный экран используют портретное разрешение, окно 9:16 растягивается', () => {

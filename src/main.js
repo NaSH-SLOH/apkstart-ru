@@ -3313,45 +3313,78 @@ if (!gotLock) {
    * 日志里就是「运行时已退出（code=0）」紧跟「device 'emulator-5554' not found」。
    * owner.pid 由每次启动覆盖，所以谁最后启动谁才是主人。
    */
-  const releaseRuntime = () => {
+  const releaseRuntime = async () => {
     let mine = true;
     try {
       const owner = Number(String(fs.readFileSync(path.join(store.DATA_DIR, 'owner.pid'), 'utf8')).trim());
       mine = !owner || owner === process.pid;
     } catch (_) { mine = true; }
-    if (mine) {
-      runtime?.dispose();
-    } else {
+    if (!mine) {
       appLog('Среда выполнения уже занята другим экземпляром, остановка пропущена (иначе его эмулятор был бы завершён)');
+      return;
     }
+    /**
+     * Полное выключение виртуальной машины при выходе.
+     *
+     * Раньше здесь был только dispose(), который намеренно НЕ трогал qemu:
+     * расчёт был на то, что следующий запуск подхватит живую машину и приложение
+     * откроется мгновенно. На практике это оставляло qemu на 2–3 ГБ памяти
+     * навсегда — watchdog простоя живёт внутри ApkStart и вместе с ним умирает,
+     * так что выгружать осиротевший эмулятор становилось некому.
+     *
+     * Теперь по умолчанию выключаем среду по-хорошему: stop() сначала сохраняет
+     * снимок (следующий запуск всё равно быстрый), потом гасит машину и убирает
+     * замки AVD. Отключается флажком engine.stopOnExit = false.
+     */
+    if (store.getSettings().engine?.stopOnExit !== false) {
+      try {
+        if (runtime && runtime.vmRunning) {
+          appLog('Остановка среды выполнения перед выходом');
+          // Ограничиваем ожидание: снимок 2 ГБ пишется несколько секунд, но
+          // зависший гостевой adb не должен держать выход минутами.
+          await Promise.race([
+            runtime.stop({ graceful: true }),
+            new Promise((r) => setTimeout(r, 30000)),
+          ]).catch(() => {});
+        }
+      } catch (e) {
+        appLog(`Остановка среды при выходе не удалась: ${e && e.message}`);
+      }
+    } else {
+      appLog('Среда выполнения оставлена работать (engine.stopOnExit = false)');
+    }
+    runtime?.dispose();
   };
+
+  /** Финальная уборка перед выходом. Среда останавливается ровно один раз. */
+  let runtimeReleased = false;
+  const finishQuit = async () => {
+    try { winAgent?.dispose(); } catch (_) { /* ignore */ }
+    try { wheelRouter?.dispose(); } catch (_) { /* ignore */ }
+    if (!runtimeReleased) {
+      runtimeReleased = true;
+      await releaseRuntime();
+    }
+    // Скрытое окно декодирования иконок тоже считается окном: не закрыв его,
+    // получим window-all-closed, который никогда не сработает.
+    try { if (decodeWindow && !decodeWindow.isDestroyed()) decodeWindow.destroy(); } catch (_) { /* ignore */ }
+    app.quit();
+  };
+
   app.on('before-quit', (e) => {
     quitting = true;
     appLog(`before-quit ready=${quitReady}`);
-    // 退出前必须先让窗口代理把模拟器窗口「摘下 + 藏好」。这一步是异步的
-    // （要等代理回包），所以第一次 before-quit 先拦下来，收尾完成再真正退出。
-    // 少了这一步，宿主窗口一销毁，Windows 会把模拟器子窗口重挂到桌面并显示出来——
-    // 表现就是「关掉 ApkStart 之后，桌面上还留着一个 Android Emulator 黑窗」。
-    if (!quitReady) {
-      e.preventDefault();
-      quitReady = true;
-      sharer?.stop();
-      notifier?.stop();
-      try { appWin?.close({ keepApp: true }); } catch (_) { /* ignore */ }
-      const finish = () => {
-        try { winAgent?.dispose(); } catch (_) { /* ignore */ }
-        try { wheelRouter?.dispose(); } catch (_) { /* ignore */ }
-        releaseRuntime();
-        // 隐藏的图标解码窗口也算一个窗口，不关掉会让 window-all-closed 永远不触发
-        try { if (decodeWindow && !decodeWindow.isDestroyed()) decodeWindow.destroy(); } catch (_) { /* ignore */ }
-        app.quit();
-      };
-      setTimeout(finish, 400);
-      return;
-    }
-    try { winAgent?.dispose(); } catch (_) { /* ignore */ }
-    try { wheelRouter?.dispose(); } catch (_) { /* ignore */ }
-    releaseRuntime();
-    try { if (decodeWindow && !decodeWindow.isDestroyed()) decodeWindow.destroy(); } catch (_) { /* ignore */ }
+    // Первый проход: останавливаем всё асинхронно и только потом выходим.
+    // Второй проход (после app.quit() из finishQuit) уже ничего не делает —
+    // иначе среда останавливалась бы дважды.
+    if (quitReady) return;
+    e.preventDefault();
+    quitReady = true;
+    sharer?.stop();
+    notifier?.stop();
+    try { appWin?.close({ keepApp: true }); } catch (_) { /* ignore */ }
+    // Небольшая пауза: прокси окна должен успеть «отцепить» окно эмулятора,
+    // иначе после выхода на рабочем столе остаётся чёрное окно эмулятора.
+    setTimeout(() => { finishQuit(); }, 400);
   });
 }
